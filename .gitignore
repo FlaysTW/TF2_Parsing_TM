@@ -6,5 +6,6 @@
 /.idea
 /.venv
 /items
+/logs
 test.py
 items.json
