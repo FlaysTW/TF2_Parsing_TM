@@ -5,4 +5,6 @@
 /tests
 /.idea
 /.venv
+/items
+test.py
 items.json
