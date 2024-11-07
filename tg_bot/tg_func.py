@@ -31,6 +31,7 @@ class Telegram_functions():
             self.create_thread_pool()
             self.start_thread_pool()
 
+    @logger.catch()
     def create_thread_pool(self):
         self.thread_pool = threading.Thread(target=self.pool_send_items)
         logger.debug('Thread pool messages created successful')
@@ -40,10 +41,11 @@ class Telegram_functions():
         logger.debug('Start pool messages')
         while self.status_pool:
             if not self.messages_queue.empty():
-                antiflood(self.bot.send_message, **self.messages_queue.get())
+                antiflood(self.bot.send_message, **self.messages_queue.get(), number_retries=20)
             time.sleep(0.0001)
         logger.debug('Disable pool messages')
 
+    @logger.catch()
     def send_item(self, message, classid, instanceid, message_thread_id, markup_flag=False):
         if markup_flag:
             data_item = {'classid': classid, 'instanceid': instanceid}
@@ -58,3 +60,8 @@ class Telegram_functions():
             self.messages_queue.put({'chat_id': self.chat_id, 'text': message, 'message_thread_id': message_thread_id, 'reply_markup': markup})
         else:
             self.messages_queue.put({'chat_id': self.chat_id, 'text': message, 'message_thread_id': message_thread_id})
+
+    @logger.catch()
+    def send_message(self, message):
+        self.bot.send_message(self.chat_id, message)
+

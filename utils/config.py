@@ -6,4 +6,4 @@ load_dotenv()
 
 bot = telebot.TeleBot(os.getenv('TG_TOKEN'))
 
-config = {'currency': {'metal': 2.89830508, 'keys': 171}}
+config = {'currency': {'metal': 2.9, 'keys': 171.0}}

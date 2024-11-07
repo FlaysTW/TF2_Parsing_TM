@@ -2,7 +2,7 @@ import telebot.types
 from telebot import TeleBot
 from telebot.types import Message, InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery
 from utils.loging import logger
-from utils.loading_data import items_bd, items_bd_list, items_bd_list_unusual, items_unusual_bd
+from utils.loading_data import items_bd, items_bd_list, items_bd_list_unusual, items_unusual_bd, items_cache
 from utils.config import config
 from tg_bot.callbacks_data import menu_page, list_menu, base_item, add_item_select, item_message
 import json
@@ -35,8 +35,6 @@ def get_search_items(text):
 
 add_item = [0]
 
-confirm_func = {}
-
 def run(bot: TeleBot, tm: TM_Parsing):
     logger.debug('Starting handlers telegram bot')
 
@@ -59,18 +57,35 @@ def run(bot: TeleBot, tm: TM_Parsing):
     @bot.message_handler(commands=['menu'])
     @logger.catch()
     def command_menu(message: Message):
-        mes = (f'STATUS:\n'
-               f'{tm.parsing_status_url}\n'
-               f'{tm.parsing_status_websocket}')
+        thread_mes_url = 'Работает' if tm.parsing_thread_url.is_alive() else 'Не работает'
+        thread_mes_websocket = 'Работает' if tm.parsing_thread_websocket.is_alive() else 'Не работает'
+        mes = (f'Информация:\n\n'
+               f'Кол-во пройденых предметов по ссылкам: {tm.count_items_url}\n'
+               f'Кол-во пройденых предметов по вебсокету: {tm.count_items_websocket}\n\n'
+               f'Последний предмет по ссылкам:\n'
+               f'{tm.last_item_url["name"]} {tm.last_item_url["id"]}\n'
+               f'Время {tm.last_item_url["date"].strftime("%d/%m %H:%M:%S")}\n\n'
+               f'Последний предмет по вебсокету:\n'
+               f'{tm.last_item_websocket["name"]} {tm.last_item_websocket["id"]}\n'
+               f'Время {tm.last_item_websocket["date"].strftime("%d/%m %H:%M:%S")}\n\n'
+               f'Предметов в кэше: {tm.count_items_cache}\n\n'
+               f'Курсы:\n'
+               f'1 key - {config["currency"]["keys"]} ₽\n'
+               f'1 metal - {config["currency"]["metal"]} ₽\n\n'
+               f'Потоки:\n'
+               f'Поток ссылки: {thread_mes_url}\n'
+               f'Поток вебсокет: {thread_mes_websocket}')
         markup = InlineKeyboardMarkup()
-        buttons = [create_button('Проверить предмет', menu_page.new('check_id')),
-                   create_button('Открыть базу', menu_page.new('base')),
-                   create_button('Удалить предмет', menu_page.new('delete_item')),
-                   create_button('Меню автобая', menu_page.new('autobuy_menu')),
-                   create_button('Очистить кэш', menu_page.new('clear_cache')),
-                   create_button('Изменить курс', menu_page.new('change_currency'))]
+        buttons = [create_button('Проверить предмет', menu_page.new('check_id')), #0
+                   create_button('Открыть базу', menu_page.new('base')), #1
+                   create_button('Удалить предмет', menu_page.new('delete_item')), #2
+                   create_button('Меню автобая', menu_page.new('autobuy_menu')), #3
+                   create_button('Очистить кэш', menu_page.new('clear_cache')), #4
+                   create_button('Настройки', menu_page.new('settings')), #5
+                   create_button('Список ПНБ', menu_page.new('iff'))] #6
         markup.add(buttons[3], buttons[1])
         markup.add(buttons[0], buttons[2])
+        markup.add(buttons[6], buttons[5])
         markup.add(buttons[4])
         bot.send_message(message.chat.id, mes, reply_markup=markup)
 
