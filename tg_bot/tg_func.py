@@ -41,7 +41,7 @@ class Telegram_functions():
         logger.debug('Start pool messages')
         while self.status_pool:
             if not self.messages_queue.empty():
-                self.bot.send_message(**self.messages_queue.get())
+                antiflood(self.bot.send_message, **self.messages_queue.get(), number_retries=20)
                 time.sleep(1)
             time.sleep(0.0001)
         logger.debug('Disable pool messages')
