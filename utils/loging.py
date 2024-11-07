@@ -10,4 +10,4 @@ def check(x):
 
 logger.remove()
 logger.add(sink=sys.stdout)
-logger.add(sink='./logs/log.log', rotation='1 day')
+#logger.add(sink='./logs/log.log', rotation='1 day')

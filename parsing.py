@@ -1,24 +1,175 @@
+import threading
 import time
 import requests
 from tg_bot.tg_func import Telegram_functions
 from utils.loging import logger
 from websockets.sync import client as ws
 import json
-
+import queue
+from utils.loading_data import items_bd, items_bd_list, items_bd_list_unusual
+from utils.config import config
 
 class TM_Parsing():
     bot = Telegram_functions()
 
-    parsing_status_url = True
+    parsing_status_url = False
     parsing_url_num = 0
 
-    parsing_status_websocket = True
+    parsing_status_websocket = False
+
+    parsing_thread_url: threading.Thread = None
+    parsing_thread_websocket: threading.Thread = None
+
+    items_queue = queue.Queue()
+
+    parsing_thread_processing_items: threading.Thread = None
+
+    TM_KEY = 'w15eJM678BP8FrcukaujhTCQ66J823M'
 
     def __init__(self):
         logger.debug('Starting parsing')
 
     @logger.catch()
-    def start_parsing_url(self):
+    def processing_items(self):
+        while True:
+            if not self.items_queue.empty():
+                try:
+                    raw = self.items_queue.get()
+                    name = raw['name']
+                    classid = raw['classid']
+                    instanceid = raw['instanceid']
+
+                    if any(i in name for i in['(Field-Tested)', '(Battle Scarred)', '(Well-Worn)', '(Factory New)', '(Minimal Wear)']):  # TODO: Quality
+                        #self.bot.send_item(name, classid, instanceid, 4)
+                        continue
+
+                    if not any(i in name for i in ['Casemaker']):
+                        if any(i in name for i in ['kit', 'Kit', 'Tour of Duty Ticket', 'Mann Co. Supply Crate Key', 'Refined Metal', ' Case']):  # TODO: Blacklist
+                            continue
+
+                    for repl in ['Series ']:
+                        name = name.replace(repl, '')
+                    if not any(i in name for i in
+                               ['The Bitter Taste of Defeat and Lime', 'The Essential Accessories',
+                                'The Value of Teamwork', 'The Concealed Killer Weapons Case',
+                                "The Color of a Gentlemann's Business Pants", 'The Athletic Supporter', 'The Superfan',
+                                'The Powerhouse Weapons Case']):
+                        if 'The ' == name[:4] or 'the ' == name[:4]:
+                            name = name[4:]
+
+                    if 'Unusual' in name:
+                        if name in items_bd_list_unusual:
+                            # threading.Thread(target=self.thread_processing_item, args=[classid, instanceid]).start()
+                            #self.bot.send_item(name, classid, instanceid, 6)
+                            pass
+                    elif name in items_bd_list:
+                        threading.Thread(target=self.thread_processing_item, args=[name, classid, instanceid]).start()
+                        #self.bot.send_item(name, classid, instanceid, 7)
+                    else:
+                        #self.bot.send_item(name, classid, instanceid, 3)
+                        pass
+
+                    #threading.Thread(target=self.thread_processing_item, args=[classid, instanceid]).start()
+
+                    #print(name, self.items_queue.qsize(), threading.active_count())
+                except Exception as ex:
+                    print('fail', self.items_queue.qsize(), threading.active_count())
+            time.sleep(0.0001)
+
+    @logger.catch()
+    def thread_processing_item(self,name, classid, instanceid):
+        r = requests.get(f'https://tf2.tm/api/ItemInfo/{classid}_{instanceid}/ru/?key={self.TM_KEY}', timeout=5)
+        #print(classid, instanceid)
+        if r.status_code == 200:
+            resp = r.json()
+            item = ""
+            description = ''
+            price_item = int(resp['min_price']) / 100
+            if resp['description']:
+                for des in resp['description']:
+                    description += des['value'] + '\n'
+            if 'Unusual' == name[:7]:
+                pass
+            else:
+                if '(Нельзя перековывать)' not in description:
+                    if 'Craftable' in items_bd[name]:
+                        item = items_bd[name]['Craftable']
+                        price_db = item['price'] * config['currency'][item['currency']]
+                    else:
+                        print(name, None)
+                        self.bot.send_item(name, classid, instanceid, 3)
+                else:
+                    if 'Non-Craftable' in items_bd[name]:
+                        item = items_bd[name]['Non-Craftable']
+                        price_db = item['price'] * config['currency'][item['currency']]
+                    else:
+                        print(name, None)
+                        self.bot.send_item(name, classid, instanceid, 3)
+                if item:
+                    if price_db * 0.9 <= price_item <= price_db:
+                        print(item)
+                        self.bot.send_item(f'{name}, {classid}, {instanceid}', classid, instanceid, markup_flag=True, message_thread_id=7)
+
+        else:
+            pass
+
+
+
+    @logger.catch()
+    def start_parsing(self):
+        self.start_thread_parsing_url()
+        self.start_thread_parsing_websocket()
+
+    @logger.catch()
+    def start_thread_processing(self):
+        if self.parsing_thread_processing_items:
+            logger.debug('Starting processing')
+            self.parsing_thread_processing_items.start()
+        else:
+            logger.debug('Thread processing not created')
+            self.create_thread_processing()
+            self.start_thread_processing()
+
+    @logger.catch()
+    def create_thread_processing(self):
+        self.parsing_thread_processing_items = threading.Thread(target=self.processing_items)
+        logger.debug('Thread processing created successful')
+
+    @logger.catch()
+    def start_thread_parsing_url(self):
+        if self.parsing_thread_url:
+            if self.parsing_status_url == False:
+                logger.debug('Starting urls parsing')
+                self.parsing_status_url = True
+                self.parsing_thread_url.start()
+        else:
+            logger.debug('Thread parsing URL not created')
+            self.create_thread_parsing_url()
+            self.start_thread_parsing_url()
+
+    @logger.catch()
+    def start_thread_parsing_websocket(self):
+        if self.parsing_thread_websocket:
+            if self.parsing_status_websocket == False:
+                logger.debug('Starting websockets parsing')
+                self.parsing_status_websocket = True
+                self.parsing_thread_websocket.start()
+        else:
+            logger.debug('Thread parsing websocket not created')
+            self.create_thread_parsing_websocket()
+            self.start_thread_parsing_websocket()
+    @logger.catch()
+    def create_thread_parsing_url(self):
+        self.parsing_thread_url = threading.Thread(target=self.parsing_url)
+        logger.debug('Thread created URL successful')
+
+    @logger.catch()
+    def create_thread_parsing_websocket(self):
+        self.parsing_thread_websocket = threading.Thread(target=self.parsing_websocket)
+        logger.debug('Thread created WEBSOCKET successful')
+
+    def parsing_url(self):
+        logger.debug('Start urls parsing')
         while self.parsing_status_url:
             try:
                 url = f"https://tf2.tm/ajax/name/all/all/all/{self.parsing_url_num}/56/0;500000/all/all/-1/-1/all?sd=desc"
@@ -26,20 +177,23 @@ class TM_Parsing():
                 if response.status_code == 500:
                     self.parsing_url_num = 0
                 elif response.status_code == 200:
-                    logger.info(f'URL {response.json()}')
-                self.parsing_url_num += 1
+                    for item in response.json()[0]:
+                        self.items_queue.put({'name': item[-1], 'classid': item[0], 'instanceid': item[1]})
+                    self.parsing_url_num += 1
+                else:
+                    logger.error(f'URL ERROR status code {response.status_code} number page - {self.parsing_url_num}')
             except Exception as ex:
-                logger.exception(f'{ex}')
+                logger.exception(f'URL {ex}')
 
-    @logger.catch()
-    def start_parsing_websocket(self):
+    def parsing_websocket(self):
+        logger.debug('Start websocket parsing')
         while self.parsing_status_websocket:
             try:
                 with ws.connect('wss://wsnn.dota2.net/wsn/', open_timeout=5, close_timeout=5) as client:
                     logger.success(f'WEBSOCKET SUCCEFULL CONNECTION')
                     client.send('newitems_tf')
                     while self.parsing_status_websocket:
-                        res = json.loads(json.loads(client.recv(timeout=5))['data'])
-                        logger.info(f'WEBSOCKET {res}')
+                        res = json.loads(json.loads(client.recv(timeout=10))['data'])
+                        self.items_queue.put({'name': res['i_market_hash_name'], 'classid': res['i_classid'], 'instanceid': res['i_instanceid']})
             except Exception as ex:
-                logger.exception(f'{ex}')
+                logger.exception(f'WEBSOCKET {ex}')

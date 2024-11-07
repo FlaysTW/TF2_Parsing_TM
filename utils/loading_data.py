@@ -1,8 +1,11 @@
 import json
 
-with open('./items.json', 'r', encoding='UTF-8') as file:
+with open('./items/items.json', 'r', encoding='UTF-8') as file:
     items_bd = json.load(file)
 
-items_bd_list = [x for x in items_bd if 'Unusual' != x]
+with open('./items/unusual_items.json', 'r', encoding='UTF-8') as file:
+    items_unusual_bd = json.load(file)
 
-items_bd_list_unusual = [x for x in items_bd['Unusual']]
+items_bd_list = [x for x in items_bd]
+
+items_bd_list_unusual = [x for x in items_unusual_bd]

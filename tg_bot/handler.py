@@ -1,10 +1,10 @@
 import telebot.types
 from telebot import TeleBot
 from telebot.types import Message, InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery
-from telebot.callback_data import CallbackData
 from utils.loging import logger
-from utils.loading_data import items_bd, items_bd_list, items_bd_list_unusual
+from utils.loading_data import items_bd, items_bd_list, items_bd_list_unusual, items_unusual_bd
 from utils.config import config
+from tg_bot.callbacks_data import menu_page, list_menu, base_item, add_item_select, item_message
 import json
 from parsing import TM_Parsing
 
@@ -24,7 +24,7 @@ def get_search_items(text):
     result = []
     if 'unusual' == text[:7]:
         text = text[7:]
-        for item in items_bd['Unusual']:
+        for item in items_unusual_bd:
             if text in item.lower():
                 result.append(item)
     else:
@@ -34,11 +34,6 @@ def get_search_items(text):
     return result
 
 add_item = [0]
-
-menu_page = CallbackData('page', prefix='menu')
-list_menu = CallbackData('page', 'type', 'text', prefix='list')
-base_item = CallbackData('type', 'select', 'item', 'unusual', 'status', 'craft', prefix='bi')
-add_item_select = CallbackData('select', 'type', prefix='additem')
 
 confirm_func = {}
 
@@ -52,11 +47,21 @@ def run(bot: TeleBot, tm: TM_Parsing):
                          message_thread_id=message.message_thread_id, reply_markup=telebot.types.ReplyKeyboardRemove())
         print(len(bot.message_handlers))
 
+    @bot.message_handler(commands=['stop'])
+    def command_stop(message: Message):
+        tm.parsing_status_url = False
+
+    @bot.message_handler(commands=['start'])
+    def command_start(message: Message):
+        tm.start_thread_parsing_url()
+
 
     @bot.message_handler(commands=['menu'])
     @logger.catch()
     def command_menu(message: Message):
-        mes = 'test'
+        mes = (f'STATUS:\n'
+               f'{tm.parsing_status_url}\n'
+               f'{tm.parsing_status_websocket}')
         markup = InlineKeyboardMarkup()
         buttons = [create_button('Проверить предмет', menu_page.new('check_id')),
                    create_button('Открыть базу', menu_page.new('base')),
@@ -74,7 +79,7 @@ def run(bot: TeleBot, tm: TM_Parsing):
     def menu_base(callback: CallbackQuery):
         bot.answer_callback_query(callback.id)
         count_not_unusual_items = len(items_bd)-1
-        count_unusual_items = len(items_bd['Unusual'])
+        count_unusual_items = len(items_unusual_bd)
         count_all_items = count_unusual_items + count_not_unusual_items
         mes = (f"Кол-во предметов: {count_not_unusual_items} шт.\n"
                f"Кол-во unusual предметов: {count_unusual_items} шт.\n\n"
@@ -110,7 +115,7 @@ def run(bot: TeleBot, tm: TM_Parsing):
                 add_item[0] = 0
                 return 0
 
-            if (item_name in items_bd or item_name in items_bd['Unusual']) and flag:
+            if (item_name in items_bd or item_name in items_unusual_bd) and flag:
                 mes = (f'Предмет {item_name} уже есть в базе данных.\n'
                        f'Вы уверены, что хотите его перезаписать?')
                 markup = InlineKeyboardMarkup()
@@ -301,13 +306,15 @@ def run(bot: TeleBot, tm: TM_Parsing):
         elif data['type'] == 'ready':
             try:
                 if 'Unusual' == add_item[0]['name'][:7]:
-                    items_bd['Unusual'][add_item[0]['name']] = add_item[0][add_item[0]['name']]
+                    items_unusual_bd[add_item[0]['name']] = add_item[0][add_item[0]['name']]
                     items_bd_list_unusual.append(add_item[0]['name'])
+                    with open('./items/unusual_items.json', 'w', encoding='UTF-8') as file:
+                        json.dump(items_unusual_bd, file, indent=4, ensure_ascii=False)
                 else:
                     items_bd[add_item[0]['name']] = add_item[0][add_item[0]['name']]
                     items_bd_list.append(add_item[0]['name'])
-                with open('./items.json', 'w', encoding='utf-8') as file:
-                    json.dump(items_bd, file, indent=4, ensure_ascii=False)
+                    with open('./items/items.json', 'w', encoding='utf-8') as file:
+                        json.dump(items_bd, file, indent=4, ensure_ascii=False)
                 bot.edit_message_text(callback.message.text, callback.message.chat.id, callback.message.message_id)
                 bot.send_message(callback.message.chat.id, 'Успешно добавлено!')
             except Exception as ex:
@@ -373,24 +380,23 @@ def run(bot: TeleBot, tm: TM_Parsing):
         item_name = items_bd_list_unusual[int(data['item'])] if data['unusual'] else items_bd_list[int(data['item'])]
         mes = f'Предмет: {item_name}\n\n'
         markup = InlineKeyboardMarkup()
-        items = items_bd
         if 'Unusual' == item_name[:7]:
-            print(items_bd['Unusual'][item_name])
+            print(items_unusual_bd[item_name])
             markup.add(create_button('Добавить эффект', base_item.new(item=data['item'], unusual=data['unusual'], craft='', select='', status='add_effect', type='edit_price')))
-            items = items_bd['Unusual']
-            for craft in items_bd['Unusual'][item_name]:
+            items = items_unusual_bd
+            for craft in items_unusual_bd[item_name]:
                 mes += f'{craft}:\n'
-                if 'Particles' in items_bd['Unusual'][item_name][craft]:
+                if 'Particles' in items_unusual_bd[item_name][craft]:
                     mes += f'\t\tЭффекты:\n'
-                    for particl in items_bd['Unusual'][item_name][craft]['Particles']:
+                    for particl in items_unusual_bd[item_name][craft]['Particles']:
                         mes += (f'\t\t\t\tЭффект: {particl}\n'
-                                f'\t\t\t\tЦеник: {items_bd["Unusual"][item_name][craft]["Particles"][particl]["price"]} {items_bd["Unusual"][item_name][craft]["Particles"][particl]["currency"]}\n'
-                                f'\t\t\t\tЦеник в рублях: {config["currency"][items_bd["Unusual"][item_name][craft]["Particles"][particl]["currency"]] * items_bd["Unusual"][item_name][craft]["Particles"][particl]["price"]} ₽\n\n')
+                                f'\t\t\t\tЦеник: {items_unusual_bd[item_name][craft]["Particles"][particl]["price"]} {items_unusual_bd[item_name][craft]["Particles"][particl]["currency"]}\n'
+                                f'\t\t\t\tЦеник в рублях: {config["currency"][items_unusual_bd[item_name][craft]["Particles"][particl]["currency"]] * items_unusual_bd[item_name][craft]["Particles"][particl]["price"]} ₽\n\n')
                 else:
-                    mes += (f'\t\tЦеник: {items_bd["Unusual"][item_name][craft]["price"]} {items_bd["Unusual"][item_name][craft]["currency"]}\n'
-                            f'\t\tЦеник в рублях: {config["currency"][items_bd["Unusual"][item_name][craft]["currency"]] * items_bd["Unusual"][item_name][craft]["price"]} ₽\n\n')
+                    mes += (f'\t\tЦеник: {items_unusual_bd[item_name][craft]["price"]} {items_unusual_bd[item_name][craft]["currency"]}\n'
+                            f'\t\tЦеник в рублях: {config["currency"][items_unusual_bd[item_name][craft]["currency"]] * items_unusual_bd[item_name][craft]["price"]} ₽\n\n')
         else:
-            print(items_bd[item_name])
+            items = items_bd
             for craft in items_bd[item_name]:
                 mes += (f'{craft}:\n'
                         f'\t\tЦеник: {items_bd[item_name][craft]["price"]} {items_bd[item_name][craft]["currency"]}\n'
@@ -438,7 +444,7 @@ def run(bot: TeleBot, tm: TM_Parsing):
                 if data['unusual']:
                     if data['select']:
                         bot.delete_message(callback.message.chat.id, data['select'])
-                    items_bd['Unusual'][item_name][data['craft']] = {'Particles':{}}
+                    items_unusual_bd[item_name][data['craft']] = {'Particles':{}}
                     data['status'] = 'add_craft_unusual'
                     data['type'] = 'select_effect'
                     data.pop('@')
@@ -455,8 +461,8 @@ def run(bot: TeleBot, tm: TM_Parsing):
             bot.edit_message_text(mes, callback.message.chat.id, callback.message.message_id, reply_markup=markup)
         elif data['type'] == 'currency':
             if data['unusual']:
-                effects = list(items_bd['Unusual'][item_name][data['craft']]['Particles'])
-                items_bd['Unusual'][item_name][data['craft']]['Particles'][effects[int(data['unusual'])]]['new_currency'] = data['select']
+                effects = list(items_unusual_bd[item_name][data['craft']]['Particles'])
+                items_unusual_bd[item_name][data['craft']]['Particles'][effects[int(data['unusual'])]]['new_currency'] = data['select']
             else:
                 items_bd[item_name][data['craft']]['new_currency'] = data['select']
             bot.edit_message_text('Пришлите ценик (0 для отмены):', callback.message.chat.id, callback.message.message_id)
@@ -470,7 +476,7 @@ def run(bot: TeleBot, tm: TM_Parsing):
                 if data['select']:
                     bot.delete_message(callback.message.chat.id, data['select'])
                 unusual_flag = 'select_effect'
-                for craft in items_bd['Unusual'][item_name]:
+                for craft in items_unusual_bd[item_name]:
                     crafts.append(craft)
                     buttons.append(create_button(craft, base_item.new(item=data['item'], unusual=data['unusual'], craft=craft, select='', status=data['status'], type='select_effect')))
             else:
@@ -492,10 +498,10 @@ def run(bot: TeleBot, tm: TM_Parsing):
             if data['status'] == 'add_craft':
                 items_bd[item_name].pop(data['craft'])
             elif data['status'] == 'add_effect':
-                effects = list(items_bd['Unusual'][item_name][data['craft']]['Particles'])
-                items_bd['Unusual'][item_name][data['craft']]['Particles'].pop(effects[int(data['unusual'])])
+                effects = list(items_unusual_bd[item_name][data['craft']]['Particles'])
+                items_unusual_bd[item_name][data['craft']]['Particles'].pop(effects[int(data['unusual'])])
             elif data['status'] == 'add_craft_unusual':
-                items_bd['Unusual'][item_name].pop(data['craft'])
+                items_unusual_bd[item_name].pop(data['craft'])
             base_menu_select_item(callback)
             return 0
         elif data['type'] == 'select_effect':
@@ -515,27 +521,27 @@ def run(bot: TeleBot, tm: TM_Parsing):
         callback.id = -1
         item_name = items_bd_list_unusual[int(data['item'])] if data['unusual'] else items_bd_list[int(data['item'])]
         if data['unusual']:
-            effects = list(items_bd['Unusual'][item_name][data['craft']]['Particles'])
+            effects = list(items_unusual_bd[item_name][data['craft']]['Particles'])
         if type == 'currency':
             if message.text == '0':
                 if data['status'] == 'add_craft':
                     items_bd[item_name].pop(data['craft'])
                 elif data['status'] == 'add_effect':
-                    items_bd['Unusual'][item_name][data['craft']]['Particles'].pop(effects[int(data['unusual'])])
+                    items_unusual_bd[item_name][data['craft']]['Particles'].pop(effects[int(data['unusual'])])
                 elif data['status'] == 'add_craft_unusual':
-                    items_bd['Unusual'][item_name].pop(data['craft'])
+                    items_unusual_bd[item_name].pop(data['craft'])
                 else:
                     if data['unusual']:
-                        items_bd['Unusual'][item_name][data['craft']]['Particles'][effects[int(data['unusual'])]].pop('new_currency')
+                        items_unusual_bd[item_name][data['craft']]['Particles'][effects[int(data['unusual'])]].pop('new_currency')
                     else:
                         items_bd[item_name][data['craft']].pop('new_currency')
             else:
                 try:
                     price = float(message.text)
                     if data['unusual']:
-                        items_bd['Unusual'][item_name][data['craft']]['Particles'][effects[int(data['unusual'])]]['price'] = price
-                        items_bd['Unusual'][item_name][data['craft']]['Particles'][effects[int(data['unusual'])]]['currency'] = items_bd['Unusual'][item_name][data['craft']]['Particles'][effects[int(data['unusual'])]]['new_currency']
-                        items_bd['Unusual'][item_name][data['craft']]['Particles'][effects[int(data['unusual'])]].pop('new_currency')
+                        items_unusual_bd[item_name][data['craft']]['Particles'][effects[int(data['unusual'])]]['price'] = price
+                        items_unusual_bd[item_name][data['craft']]['Particles'][effects[int(data['unusual'])]]['currency'] = items_unusual_bd[item_name][data['craft']]['Particles'][effects[int(data['unusual'])]]['new_currency']
+                        items_unusual_bd[item_name][data['craft']]['Particles'][effects[int(data['unusual'])]].pop('new_currency')
                     else:
                         items_bd[item_name][data['craft']]['price'] = price
                         items_bd[item_name][data['craft']]['currency'] = items_bd[item_name][data['craft']]['new_currency']
@@ -551,7 +557,7 @@ def run(bot: TeleBot, tm: TM_Parsing):
         elif type == 'select_effect':
             if message.text == '0':
                 if data['status'] == 'add_craft_unusual':
-                    items_bd['Unusual'][item_name].pop(data['craft'])
+                    items_unusual_bd[item_name].pop(data['craft'])
                 callback.message = bot.send_message(message.chat.id, 'Пум...')
                 callback.data = base_item.new(item=data['item'], unusual=data['unusual'], craft=data['craft'],select='', status='', type='choice_item')
                 base_menu_select_item(callback)
@@ -568,8 +574,8 @@ def run(bot: TeleBot, tm: TM_Parsing):
                 base_menu_edit_item(callback)
             elif data['status'] == 'add_effect' or data['status'] == 'add_craft_unusual':
                 if message.text not in effects:
-                    effect_id = len(list(items_bd['Unusual'][item_name][data['craft']]['Particles']))
-                    items_bd['Unusual'][item_name][data['craft']]['Particles'][message.text] = {}
+                    effect_id = len(list(items_unusual_bd[item_name][data['craft']]['Particles']))
+                    items_unusual_bd[item_name][data['craft']]['Particles'][message.text] = {}
                     callback.data = base_item.new(item=data['item'], unusual=effect_id,
                                                   craft=data['craft'],
                                                   select='', status=data['status'], type='add_type')
@@ -580,6 +586,12 @@ def run(bot: TeleBot, tm: TM_Parsing):
                     bot.send_message(callback.message.chat.id, 'Пришлите название эффекта (0 для отмены):')
                     bot.register_next_step_handler(callback.message, base_menu_item_send, 'select_effect', callback)
                     return 0
+
+    @bot.callback_query_handler(func= lambda x: item_message.filter().check(x))
+    def item_mes(callback: CallbackQuery):
+        bot.answer_callback_query(callback.id)
+        data_callback = item_message.parse(callback.data)
+        print(data_callback)
 
 
     logger.debug('Start handlers telegram bot')

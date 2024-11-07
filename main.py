@@ -5,20 +5,19 @@ from parsing import TM_Parsing
 from utils import loading_data
 
 def main():
-    #tg = Telegram_Bot()
     tm = TM_Parsing()
-    threading.Thread(target=tm.start_parsing_websocket).start()
-    threading.Thread(target=tm.start_parsing_url).start()
+    tg = Telegram_Bot(tm)
+    #tm.start_thread_parsing_websocket()
+    tm.start_parsing()
+    tm.start_thread_processing()
+    #tm.thread_processing_item('The Ap-Sap', 780611765,11041817)
 
 def test():
-    maxim = 0
-    word = ''
+    cur = {}
     for i in loading_data.items_bd:
-        if len(i) >= maxim:
-            maxim = len(i)
-            word = i
+        if i == 'Unusual':
+            pass
 
-    print(maxim, word)
 
 if __name__ == '__main__':
     main()
