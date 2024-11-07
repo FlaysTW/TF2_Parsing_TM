@@ -65,7 +65,7 @@ class TM_Parsing():
                         continue
 
                     if not any(i in name for i in ['Casemaker']):
-                        if any(i in name for i in ['kit', 'Kit', 'Tour of Duty Ticket', 'Mann Co. Supply Crate Key', 'Refined Metal', ' Case']):  # TODO: Blacklist
+                        if any(i in name for i in ['kit', 'Kit', 'Tour of Duty Ticket', 'Mann Co. Supply Crate Key', 'Refined Metal', ' Case', 'Create', 'Mann Co. Supply Munition']):  # TODO: Blacklist
                             continue
 
                     for repl in ['Series ']:
