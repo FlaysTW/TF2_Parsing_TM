@@ -32,6 +32,7 @@ def run(bot: TeleBot, tm: TM_Parsing):
                f'Потоки:\n'
                f'Поток ссылки: {thread_mes_url}\n'
                f'Поток вебсокет: {thread_mes_websocket}\n\n'
+               f'Кол-во айтемов в очереди для потоков: {tm.items_queue.qsize()}'
                f'Кол-во активных потоков: {threading.active_count()}\n'
                f'Кол-во неотправленых сообщений: {tm.bot.count_message_not}')
         markup = InlineKeyboardMarkup()
