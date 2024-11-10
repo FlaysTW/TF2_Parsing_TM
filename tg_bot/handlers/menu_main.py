@@ -1,3 +1,5 @@
+import threading
+
 from telebot import TeleBot
 from telebot.types import Message, InlineKeyboardMarkup, CallbackQuery
 from utils.loging import logger
@@ -29,7 +31,9 @@ def run(bot: TeleBot, tm: TM_Parsing):
                f'1 metal - {config["currency"]["metal"]} ₽\n\n'
                f'Потоки:\n'
                f'Поток ссылки: {thread_mes_url}\n'
-               f'Поток вебсокет: {thread_mes_websocket}')
+               f'Поток вебсокет: {thread_mes_websocket}\n\n'
+               f'Кол-во активных потоков: {threading.active_count()}\n'
+               f'Кол-во неотправленых сообщений: {tm.bot.count_message_not}')
         markup = InlineKeyboardMarkup()
         buttons = [create_button('Проверить предмет', menu_page.new('check_id')),  # 0
                    create_button('Открыть базу', menu_page.new('base')),  # 1

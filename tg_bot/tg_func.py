@@ -18,6 +18,8 @@ class Telegram_functions():
 
     messages_queue = queue.Queue()
 
+    count_message_not = 0
+
     def __init__(self):
         self.start_thread_pool()
 
@@ -28,6 +30,7 @@ class Telegram_functions():
             try:
                 if not self.messages_queue.empty():
                     antiflood(self.bot.send_message, **self.messages_queue.get(), number_retries=20)
+                    self.count_message_not -= 1
             except Exception as ex:
                 logger.exception(ex)
             time.sleep(0.0001)
@@ -71,7 +74,10 @@ class Telegram_functions():
         else:
             self.messages_queue.put({'chat_id': self.chat_id, 'text': message, 'message_thread_id': message_thread_id})
 
+        self.count_message_not += 1
+
     @logger.catch()
     def send_message(self, message):
         self.messages_queue.put({'chat_id': self.chat_id, 'text': message})
+        self.count_message_not += 1
 

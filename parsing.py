@@ -62,7 +62,6 @@ class TM_Parsing():
         while self.parsing_status_processing_items:
             if not self.items_queue.empty():
                 try:
-                    print(self.items_queue.qsize())
                     raw = self.items_queue.get()
                     name = raw['name']
                     classid = raw['classid']
@@ -94,7 +93,7 @@ class TM_Parsing():
 
     @logger.catch()
     def thread_processing_item(self,name, classid, instanceid):
-        r = requests.get(f'https://tf2.tm/api/ItemInfo/{classid}_{instanceid}/en/?key={self.TM_KEY}', timeout=5)
+        r = requests.get(f'https://tf2.tm/api/ItemInfo/{classid}_{instanceid}/en/?key={self.TM_KEY}', timeout=20)
         #print(classid, instanceid)
         #print(r.json())
         if r.status_code == 200:
@@ -187,8 +186,9 @@ class TM_Parsing():
         logger.debug('Start thread save cache')
         while self.status_save_cache:
             try:
+                t = items_cache.copy()
                 with open('./items/cache.json', 'w', encoding='utf-8') as file:
-                    json.dump(items_cache, file, indent=4, ensure_ascii=False)
+                    json.dump(t, file, indent=4, ensure_ascii=False)
                 logger.success('Successful save cache')
             except Exception as ex:
                 logger.error('Thread save cache error')
