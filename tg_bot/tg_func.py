@@ -22,6 +22,18 @@ class Telegram_functions():
         self.start_thread_pool()
 
     @logger.catch()
+    def pool_send_items(self):
+        logger.debug('Start pool messages')
+        while self.status_pool:
+            try:
+                if not self.messages_queue.empty():
+                    antiflood(self.bot.send_message, **self.messages_queue.get(), number_retries=20)
+            except Exception as ex:
+                logger.exception(ex)
+            time.sleep(0.0001)
+        logger.debug('Disable pool messages')
+
+    @logger.catch()
     def start_thread_pool(self):
         if self.thread_pool:
             logger.debug('Starting pool messages')
@@ -37,17 +49,7 @@ class Telegram_functions():
         logger.debug('Thread pool messages created successful')
 
     @logger.catch()
-    def pool_send_items(self):
-        logger.debug('Start pool messages')
-        while self.status_pool:
-            if not self.messages_queue.empty():
-                antiflood(self.bot.send_message, **self.messages_queue.get(), number_retries=20)
-                time.sleep(1)
-            time.sleep(0.0001)
-        logger.debug('Disable pool messages')
-
-    @logger.catch()
-    def send_item(self, message, classid, instanceid, message_thread_id, markup_flag=False):
+    def send_item(self, message, classid, instanceid, message_thread_id, markup_flag=False, markup_undefiend=False):
         if markup_flag:
             data_item = {'classid': classid, 'instanceid': instanceid}
             markup = InlineKeyboardMarkup()
@@ -58,6 +60,13 @@ class Telegram_functions():
             markup.add(buttons[0], buttons[1])
             markup.add(buttons[2])
             markup.add(buttons[3])
+            self.messages_queue.put({'chat_id': self.chat_id, 'text': message, 'message_thread_id': message_thread_id, 'reply_markup': markup})
+        elif markup_undefiend:
+            data_item = {'classid': classid, 'instanceid': instanceid}
+            markup = InlineKeyboardMarkup()
+            buttons = [InlineKeyboardButton(text='Удалить из кэша', callback_data=item_message.new(**data_item, type='del')),
+                       InlineKeyboardButton(text='Добавить в базу данных', callback_data=item_message.new(**data_item, type='add_bd'))]
+            markup.add(*buttons)
             self.messages_queue.put({'chat_id': self.chat_id, 'text': message, 'message_thread_id': message_thread_id, 'reply_markup': markup})
         else:
             self.messages_queue.put({'chat_id': self.chat_id, 'text': message, 'message_thread_id': message_thread_id})

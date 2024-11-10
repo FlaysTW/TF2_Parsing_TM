@@ -7,7 +7,10 @@ from utils import loading_data
 def main():
     tm = TM_Parsing()
     tg = Telegram_Bot(tm)
+    #tm.start_thread_parsing_url()
     tm.start_parsing()
+    # tm.start_thread_processing()
+    # tm.start_thread_parsing_websocket()
     #tm.thread_processing_item('The Ap-Sap', 780611765,11041817)
 
 def test():

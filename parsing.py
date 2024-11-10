@@ -9,13 +9,13 @@ import json
 import queue
 from utils.loading_data import items_bd, items_bd_list, items_bd_list_unusual, items_unusual_bd, items_cache
 from utils.config import config
-
+import csv
 
 class TM_Parsing():
     bot = Telegram_functions()
 
     parsing_status_url = False
-    parsing_url_num = 0
+    last_tm_tf2_bd = ''
 
     parsing_status_websocket = False
 
@@ -50,6 +50,13 @@ class TM_Parsing():
         self.create_thread_save_cache()
 
     @logger.catch()
+    def start_parsing(self):
+        self.start_thread_parsing_url()
+        self.start_thread_parsing_websocket()
+        self.start_thread_processing()
+        self.start_thread_save_cache()
+
+    @logger.catch()
     def processing_items(self):
         logger.debug('Start processing Thread')
         while self.parsing_status_processing_items:
@@ -59,10 +66,6 @@ class TM_Parsing():
                     name = raw['name']
                     classid = raw['classid']
                     instanceid = raw['instanceid']
-
-                    if any(i in name for i in['(Field-Tested)', '(Battle Scarred)', '(Well-Worn)', '(Factory New)', '(Minimal Wear)']):  # TODO: Quality
-                        self.bot.send_item(f'{name}, {classid}, {instanceid}', classid, instanceid, 4)
-                        continue
 
                     if not any(i in name for i in ['Casemaker']):
                         if any(i in name for i in ['kit', 'Kit', 'Tour of Duty Ticket', 'Mann Co. Supply Crate Key', 'Refined Metal', ' Case', 'Create', 'Mann Co. Supply Munition']):  # TODO: Blacklist
@@ -77,7 +80,6 @@ class TM_Parsing():
                                 'The Powerhouse Weapons Case']):
                         if 'The ' == name[:4] or 'the ' == name[:4]:
                             name = name[4:]
-
                     threading.Thread(target=self.thread_processing_item, args=[name, classid, instanceid]).start()
 
                     #print(name, self.items_queue.qsize(), threading.active_count())
@@ -90,7 +92,7 @@ class TM_Parsing():
 
 
     @logger.catch()
-    def thread_processing_item(self,name, classid, instanceid, quality=False):
+    def thread_processing_item(self,name, classid, instanceid):
         r = requests.get(f'https://tf2.tm/api/ItemInfo/{classid}_{instanceid}/en/?key={self.TM_KEY}', timeout=5)
         #print(classid, instanceid)
         #print(r.json())
@@ -101,6 +103,9 @@ class TM_Parsing():
             mes_description = ''
             price_item = int(resp['min_price']) / 100
             effect = ''
+            non_craftable = ''
+            quality = False
+            message_thread_id = 7
             if resp['description']:
                 for des in resp['description']:
                     des = des['value']
@@ -116,85 +121,65 @@ class TM_Parsing():
                         continue
                     elif 'spell only' in des:
                         mes_description += des + '\n'
+                        message_thread_id = 5
                         continue
 
             if mes_description:
                 mes_description = 'Описание:\n' + mes_description + '\n\n'
-            if name in items_bd_list or name in items_bd_list_unusual:
+
+            if any(i in name for i in ['(Field-Tested)', '(Battle Scarred)', '(Well-Worn)', '(Factory New)', '(Minimal Wear)']):  # TODO: Quality
+                quality = True
+
+            if name in items_bd_list or name in items_bd_list_unusual and quality == False:
                 if 'Unusual' == name[:7]:
+                    message_thread_id = 6
                     if 'Not Usable in Crafting' not in full_description:
                         if 'Craftable' in items_unusual_bd[name]:
                             if effect in items_unusual_bd[name]['Craftable']['Particles']:
                                 item = items_unusual_bd[name]['Craftable']['Particles'][effect]
                                 price_db = item['price'] * config['currency'][item['currency']]
-                            else:
-                                self.bot.send_item(f'{name}, {classid}, {instanceid}', classid, instanceid, 3)
-                        else:
-                            self.bot.send_item(f'{name}, {classid}, {instanceid}', classid, instanceid, 3)
                     else:
                         if 'Non-Craftable' in items_unusual_bd[name]:
                             if effect in items_unusual_bd[name]['Non-Craftable']['Particles']:
                                 item = items_unusual_bd[name]['Non-Craftable']['Particles'][effect]
-                                print(item, effect)
+                                non_craftable = 'Non-Craftable\n'
                                 price_db = item['price'] * config['currency'][item['currency']]
-                            else:
-                                self.bot.send_item(f'{name}, {classid}, {instanceid}', classid, instanceid, 3)
-                        else:
-                            self.bot.send_item(f'{name}, {classid}, {instanceid}', classid, instanceid, 3)
                     effect = ' Effect: ' + effect
                 else:
                     if 'Not Usable in Crafting' not in full_description:
                         if 'Craftable' in items_bd[name]:
                             item = items_bd[name]['Craftable']
                             price_db = item['price'] * config['currency'][item['currency']]
-                        else:
-                            self.bot.send_item(name, classid, instanceid, 3)
                     else:
                         if 'Non-Craftable' in items_bd[name]:
                             item = items_bd[name]['Non-Craftable']
+                            non_craftable = 'Non-Craftable\n'
                             price_db = item['price'] * config['currency'][item['currency']]
-                        else:
-                            self.bot.send_item(name, classid, instanceid, 3)
             if item:
                 if price_item <= price_db * 0.9:
-                    message = f'{name}{effect}\n\n{mes_description}'
+                    message = f'{name}{effect}\n{non_craftable}\n{mes_description}'
 
                     message += f'Цена на ТМ: {round(price_item / config["currency"]["keys"], 2)} keys, {price_item} ₽\n'
                     if item['currency'] == 'metal':
-                        message +=  f'Цена в базе: {item["price"] * config["currency"]["metal"] / config["currency"]["keys"]} keys, {round(item["price"] * config["currency"]["metal"],2)} ₽\n'
+                        message +=  f'Цена в базе: {round(item["price"] * config["currency"]["metal"] / config["currency"]["keys"],2)} keys, {round(item["price"] * config["currency"]["metal"],2)} ₽\n'
                     else:
                         message += f'Цена в базе: {item["price"]} keys, {item["price"] * config["currency"]["keys"]} ₽\n'
 
                     message += f'\nhttps://tf2.tm/en/item/{classid}-{instanceid}'
 
-                    self.bot.send_item(message, classid, instanceid, markup_flag=True, message_thread_id=7)
+                    self.bot.send_item(message, classid, instanceid, markup_flag=True, message_thread_id=message_thread_id)
+            elif quality:
+                message_thread_id = 4
+                message = f'{name}{effect}\n{non_craftable}\n{mes_description}'
+                message += f'https://tf2.tm/en/item/{classid}-{instanceid}'
+                self.bot.send_item(message, classid, instanceid, message_thread_id=message_thread_id)
             else:
-                self.bot.send_item(f'{name}, {classid}, {instanceid}', classid, instanceid, 3)
-
+                message_thread_id = 3
+                message = f'{name}{effect}\n{non_craftable}\n{mes_description}'
+                message += f'https://tf2.tm/en/item/{classid}-{instanceid}'
+                self.bot.send_item(message, classid, instanceid, markup_undefiend=True, message_thread_id=message_thread_id)
         else:
             pass
-
-
-
-    @logger.catch()
-    def start_parsing(self):
-        self.start_thread_parsing_url()
-        self.start_thread_parsing_websocket()
-        self.start_thread_processing()
-        self.start_thread_save_cache()
-
-    @logger.catch()
-    def start_thread_save_cache(self):
-        if not self.thread_save_cache.is_alive():
-            logger.debug('Starting save cache')
-            self.thread_save_cache.start()
-        else:
-            logger.error('Thread save cache working')
-
-    @logger.catch()
-    def create_thread_save_cache(self):
-        self.thread_save_cache = threading.Thread(target=self.save_cache)
-        logger.debug('Thread save cache created successful')
 
     @logger.catch()
     def save_cache(self):
@@ -213,6 +198,13 @@ class TM_Parsing():
         logger.debug('Create new thread save cache')
         self.create_thread_save_cache()
 
+    @logger.catch()
+    def start_thread_save_cache(self):
+        if not self.thread_save_cache.is_alive():
+            logger.debug('Starting save cache')
+            self.thread_save_cache.start()
+        else:
+            logger.error('Thread save cache working')
 
     @logger.catch()
     def start_thread_processing(self):
@@ -221,11 +213,6 @@ class TM_Parsing():
             self.parsing_thread_processing_items.start()
         else:
             logger.error('Thread processing working')
-
-    @logger.catch()
-    def create_thread_processing(self):
-        self.parsing_thread_processing_items = threading.Thread(target=self.processing_items)
-        logger.debug('Thread processing created successful')
 
     @logger.catch()
     def start_thread_parsing_url(self):
@@ -249,6 +236,16 @@ class TM_Parsing():
             logger.error('Thread parsing websocket working')
 
     @logger.catch()
+    def create_thread_save_cache(self):
+        self.thread_save_cache = threading.Thread(target=self.save_cache)
+        logger.debug('Thread save cache created successful')
+
+    @logger.catch()
+    def create_thread_processing(self):
+        self.parsing_thread_processing_items = threading.Thread(target=self.processing_items)
+        logger.debug('Thread processing created successful')
+
+    @logger.catch()
     def create_thread_parsing_url(self):
         self.parsing_thread_url = threading.Thread(target=self.parsing_url)
         logger.debug('Thread created URL successful')
@@ -263,23 +260,32 @@ class TM_Parsing():
         logger.debug('Start thread urls parsing')
         while self.parsing_status_url:
             try:
-                url = f"https://tf2.tm/ajax/name/all/all/all/{self.parsing_url_num}/56/0;500000/all/all/-1/-1/all?sd=desc"
-                response = requests.get(url, timeout=5)
-                if response.status_code == 500:
-                    self.parsing_url_num = 0
-                elif response.status_code == 200:
-                    for item in response.json()[0]:
-                        if f"{item[0]}-{item[1]}" not in items_cache:
-                            items_cache[f"{item[0]}-{item[1]}"] = {'name': item[-1]}
-                            self.count_items_url += 1
-                            self.count_items_cache += 1
-                            self.last_item_url = {'name': item[-1], 'id': f"{item[0]}-{item[1]}", 'date': datetime.datetime.now()}
-                            self.items_queue.put({'name': item[-1], 'classid': item[0], 'instanceid': item[1]})
-                    self.parsing_url_num += 1
+                r = requests.get('https://tf2.tm/itemdb/current_440.json')
+                if r.status_code == 200:
+                    tm_tf2_name_file_bd = r.json()['db']
+                    if tm_tf2_name_file_bd != self.last_tm_tf2_bd:
+                        self.last_tm_tf2_bd = tm_tf2_name_file_bd
+                        r = requests.get(f'https://tf2.tm/itemdb/{tm_tf2_name_file_bd}')
+                        if r.status_code == 200:
+                            raw_tf2_bd = r.text.split('\n')[:-1]
+                            tf2_db = csv.reader(raw_tf2_bd, delimiter=';')
+                            for item in tf2_db:
+                                classid = item[0]
+                                instanceid = item[1]
+                                name = item[13]
+                                if f"{classid}-{instanceid}" not in items_cache:
+                                    items_cache[f"{classid}-{instanceid}"] = {'name': name}
+                                    self.count_items_url += 1
+                                    self.count_items_cache += 1
+                                    self.last_item_url = {'name': name, 'id': f"{classid}-{instanceid}",'date': datetime.datetime.now()}
+                                    #self.items_queue.put({'name': name, 'classid': classid, 'instanceid': instanceid})
+                        else:
+                            logger.error(f'URL ERROR status code {r.status_code}')
                 else:
-                    logger.error(f'URL ERROR status code {response.status_code} number page - {self.parsing_url_num}')
+                    logger.error(f'URL ERROR status code {r.status_code}')
             except Exception as ex:
                 logger.exception(f'URL {ex}')
+            time.sleep(5)
         logger.debug('Stop thread urls parsing')
         logger.debug('Create new thread urls parsing')
         self.create_thread_parsing_url()

@@ -246,7 +246,7 @@
     "Tartan Spartan": {
         "Craftable": {
             "price": 1.0,
-            "currency": "keys"
+            "currency": "metal"
         }
     },
     "Collector's Tartan Spartan": {
@@ -360,7 +360,7 @@
     "Bone Dome": {
         "Craftable": {
             "price": 1.0,
-            "currency": "keys"
+            "currency": "metal"
         }
     },
     "Taunt: Mannrobics": {
@@ -500,7 +500,7 @@
     "Backbiter's Billycock": {
         "Craftable": {
             "price": 1.0,
-            "currency": "keys"
+            "currency": "metal"
         },
         "Non-Craftable": {
             "price": 4.0,
@@ -1182,7 +1182,7 @@
     "Voodoo JuJu (Slight Return)": {
         "Craftable": {
             "price": 1.0,
-            "currency": "keys"
+            "currency": "metal"
         },
         "Non-Craftable": {
             "price": 6.0,
@@ -1406,7 +1406,7 @@
     "Little Buddy": {
         "Craftable": {
             "price": 1.0,
-            "currency": "keys"
+            "currency": "metal"
         },
         "Non-Craftable": {
             "price": 1.2,
@@ -1434,7 +1434,7 @@
     "Grenadier's Softcap": {
         "Craftable": {
             "price": 1.0,
-            "currency": "keys"
+            "currency": "metal"
         },
         "Non-Craftable": {
             "price": 2.44,
@@ -1548,7 +1548,7 @@
     "Large Luchadore": {
         "Craftable": {
             "price": 1.0,
-            "currency": "keys"
+            "currency": "metal"
         },
         "Non-Craftable": {
             "price": 7.055,
@@ -1886,7 +1886,7 @@
     "Hard Counter": {
         "Craftable": {
             "price": 1.0,
-            "currency": "keys"
+            "currency": "metal"
         },
         "Non-Craftable": {
             "price": 35.33,
@@ -2056,7 +2056,7 @@
     "Gentleman's Gatsby": {
         "Craftable": {
             "price": 1.0,
-            "currency": "keys"
+            "currency": "metal"
         },
         "Non-Craftable": {
             "price": 20.88,
@@ -2240,7 +2240,7 @@
     "Noble Nickel Amassment of Hats": {
         "Craftable": {
             "price": 1.0,
-            "currency": "keys"
+            "currency": "metal"
         }
     },
     "Madame Dixie": {
@@ -2262,7 +2262,7 @@
     "Tam O' Shanter": {
         "Craftable": {
             "price": 1.0,
-            "currency": "keys"
+            "currency": "metal"
         },
         "Non-Craftable": {
             "price": 11.55,
@@ -2970,7 +2970,7 @@
         },
         "Craftable": {
             "price": 1.0,
-            "currency": "keys"
+            "currency": "metal"
         }
     },
     "Collector's Nanobalaclava": {
@@ -3094,7 +3094,7 @@
     "Gym Rat": {
         "Craftable": {
             "price": 1.0,
-            "currency": "keys"
+            "currency": "metal"
         },
         "Non-Craftable": {
             "price": 13.5,
@@ -3136,7 +3136,7 @@
         },
         "Craftable": {
             "price": 1.0,
-            "currency": "keys"
+            "currency": "metal"
         }
     },
     "Strange Respectless Rubber Glove": {
@@ -3618,7 +3618,7 @@
     "Rimmed Raincatcher": {
         "Craftable": {
             "price": 1.0,
-            "currency": "keys"
+            "currency": "metal"
         },
         "Non-Craftable": {
             "price": 5.0,
@@ -3958,7 +3958,7 @@
     "Shooter's Sola Topi": {
         "Craftable": {
             "price": 1.0,
-            "currency": "keys"
+            "currency": "metal"
         },
         "Non-Craftable": {
             "price": 9.33,
@@ -4046,7 +4046,7 @@
     "Stately Steel Toe": {
         "Craftable": {
             "price": 1.0,
-            "currency": "keys"
+            "currency": "metal"
         },
         "Non-Craftable": {
             "price": 3.0,
@@ -4368,7 +4368,7 @@
     "Glengarry Bonnet": {
         "Craftable": {
             "price": 1.0,
-            "currency": "keys"
+            "currency": "metal"
         },
         "Non-Craftable": {
             "price": 3.275,
@@ -4384,7 +4384,7 @@
     "L'Inspecteur": {
         "Craftable": {
             "price": 1.0,
-            "currency": "keys"
+            "currency": "metal"
         },
         "Non-Craftable": {
             "price": 40.0,
@@ -4428,7 +4428,7 @@
     "Valley Forge": {
         "Craftable": {
             "price": 1.0,
-            "currency": "keys"
+            "currency": "metal"
         }
     },
     "Strange Tyrantium Helmet": {
@@ -4446,7 +4446,7 @@
     "Ze Goggles": {
         "Craftable": {
             "price": 1.0,
-            "currency": "keys"
+            "currency": "metal"
         },
         "Non-Craftable": {
             "price": 2.33,
@@ -4542,7 +4542,7 @@
     "Caribbean Conqueror": {
         "Craftable": {
             "price": 1.0,
-            "currency": "keys"
+            "currency": "metal"
         }
     },
     "Collector's Caribbean Conqueror": {
@@ -4560,7 +4560,7 @@
     "Scout Shako": {
         "Craftable": {
             "price": 1.0,
-            "currency": "keys"
+            "currency": "metal"
         }
     },
     "Collector's Scout Shako": {
@@ -4708,7 +4708,7 @@
     "A Rather Festive Tree": {
         "Craftable": {
             "price": 1.0,
-            "currency": "keys"
+            "currency": "metal"
         },
         "Non-Craftable": {
             "price": 5.11,
@@ -4724,7 +4724,7 @@
     "Horrific Headsplitter": {
         "Craftable": {
             "price": 1.0,
-            "currency": "keys"
+            "currency": "metal"
         },
         "Non-Craftable": {
             "price": 10.77,
@@ -4982,7 +4982,7 @@
     "Razor Cut": {
         "Craftable": {
             "price": 1.0,
-            "currency": "keys"
+            "currency": "metal"
         }
     },
     "Charmer's Chapeau": {
@@ -5288,7 +5288,7 @@
     "Baron von Havenaplane": {
         "Craftable": {
             "price": 1.0,
-            "currency": "keys"
+            "currency": "metal"
         }
     },
     "Strange Baron von Havenaplane": {
@@ -5300,7 +5300,7 @@
     "Outdoorsman": {
         "Craftable": {
             "price": 1.0,
-            "currency": "keys"
+            "currency": "metal"
         },
         "Non-Craftable": {
             "price": 19.0,
@@ -5338,7 +5338,7 @@
     "Toy Tailor": {
         "Craftable": {
             "price": 1.0,
-            "currency": "keys"
+            "currency": "metal"
         }
     },
     "Strange Toy Tailor": {
@@ -5386,7 +5386,7 @@
     "Buckaroo's Hat": {
         "Craftable": {
             "price": 1.0,
-            "currency": "keys"
+            "currency": "metal"
         },
         "Non-Craftable": {
             "price": 1.0,
@@ -5432,7 +5432,7 @@
     "Professional's Panama": {
         "Craftable": {
             "price": 1.0,
-            "currency": "keys"
+            "currency": "metal"
         },
         "Non-Craftable": {
             "price": 2.0,
@@ -5510,7 +5510,7 @@
     "Slick Cut": {
         "Craftable": {
             "price": 1.0,
-            "currency": "keys"
+            "currency": "metal"
         }
     },
     "Collector's Slick Cut": {
@@ -5680,7 +5680,7 @@
         },
         "Craftable": {
             "price": 1.0,
-            "currency": "keys"
+            "currency": "metal"
         }
     },
     "Collector's Prancer's Pride": {
@@ -5900,7 +5900,7 @@
     "Combustible Kabuto": {
         "Craftable": {
             "price": 1.0,
-            "currency": "keys"
+            "currency": "metal"
         }
     },
     "Strange Employee of the Mmmph": {
@@ -6222,7 +6222,7 @@
     "Slo-Poke": {
         "Craftable": {
             "price": 1.0,
-            "currency": "keys"
+            "currency": "metal"
         }
     },
     "Capo's Capper": {
@@ -6328,7 +6328,7 @@
         },
         "Craftable": {
             "price": 1.0,
-            "currency": "keys"
+            "currency": "metal"
         }
     },
     "Strange Lil' Bitey": {
@@ -6428,7 +6428,7 @@
     "Noble Amassment of Hats": {
         "Craftable": {
             "price": 1.0,
-            "currency": "keys"
+            "currency": "metal"
         },
         "Non-Craftable": {
             "price": 2.11,
@@ -6478,7 +6478,7 @@
     "Big Chief": {
         "Craftable": {
             "price": 1.0,
-            "currency": "keys"
+            "currency": "metal"
         },
         "Non-Craftable": {
             "price": 11.0,
@@ -6724,7 +6724,7 @@
     "Burning Bandana": {
         "Craftable": {
             "price": 1.0,
-            "currency": "keys"
+            "currency": "metal"
         }
     },
     "Safe'n'Sound": {
@@ -6808,7 +6808,7 @@
     "Handyman's Handle": {
         "Craftable": {
             "price": 1.0,
-            "currency": "keys"
+            "currency": "metal"
         },
         "Non-Craftable": {
             "price": 4.66,
@@ -6830,7 +6830,7 @@
     "Ol' Geezer": {
         "Craftable": {
             "price": 1.0,
-            "currency": "keys"
+            "currency": "metal"
         },
         "Non-Craftable": {
             "price": 8.77,
@@ -7014,7 +7014,7 @@
     "Tavish DeGroot Experience": {
         "Craftable": {
             "price": 1.0,
-            "currency": "keys"
+            "currency": "metal"
         },
         "Non-Craftable": {
             "price": 10.5,
@@ -7060,7 +7060,7 @@
     "Mask of the Shaman": {
         "Craftable": {
             "price": 1.0,
-            "currency": "keys"
+            "currency": "metal"
         },
         "Non-Craftable": {
             "price": 285.5,
@@ -7218,7 +7218,7 @@
         },
         "Craftable": {
             "price": 1.0,
-            "currency": "keys"
+            "currency": "metal"
         }
     },
     "A Handsome Handy Thing": {
@@ -7420,7 +7420,7 @@
     "Towering Pillar of Hats": {
         "Craftable": {
             "price": 1.0,
-            "currency": "keys"
+            "currency": "metal"
         },
         "Non-Craftable": {
             "price": 8.0,
@@ -7528,7 +7528,7 @@
     "Janissary Ketche": {
         "Craftable": {
             "price": 1.0,
-            "currency": "keys"
+            "currency": "metal"
         },
         "Non-Craftable": {
             "price": 5.0,
@@ -7566,7 +7566,7 @@
     "Tartan Tyrolean": {
         "Craftable": {
             "price": 1.0,
-            "currency": "keys"
+            "currency": "metal"
         }
     },
     "Strange Tartan Tyrolean": {
@@ -7758,7 +7758,7 @@
     "Towering Titanium Pillar of Hats": {
         "Craftable": {
             "price": 1.0,
-            "currency": "keys"
+            "currency": "metal"
         }
     },
     "Strange Towering Titanium Pillar of Hats": {
@@ -8148,7 +8148,7 @@
     "Hot Dogger": {
         "Craftable": {
             "price": 1.0,
-            "currency": "keys"
+            "currency": "metal"
         },
         "Non-Craftable": {
             "price": 9.0,
@@ -8212,7 +8212,7 @@
     "Professor's Peculiarity": {
         "Craftable": {
             "price": 1.0,
-            "currency": "keys"
+            "currency": "metal"
         },
         "Non-Craftable": {
             "price": 7.0,
@@ -8360,7 +8360,7 @@
     "Katyusha": {
         "Craftable": {
             "price": 1.0,
-            "currency": "keys"
+            "currency": "metal"
         }
     },
     "Taunt: Rancho Relaxo": {
@@ -9326,7 +9326,7 @@
     "Soldered Sensei": {
         "Craftable": {
             "price": 1.0,
-            "currency": "keys"
+            "currency": "metal"
         }
     },
     "Hellmet": {
@@ -10526,7 +10526,7 @@
     "Sober Stuntman": {
         "Craftable": {
             "price": 1.0,
-            "currency": "keys"
+            "currency": "metal"
         },
         "Non-Craftable": {
             "price": 2.44,
@@ -10846,7 +10846,7 @@
     "Sultan's Ceremonial": {
         "Craftable": {
             "price": 1.0,
-            "currency": "keys"
+            "currency": "metal"
         },
         "Non-Craftable": {
             "price": 16.55,
@@ -10934,7 +10934,7 @@
     "Gentleman's Ushanka": {
         "Craftable": {
             "price": 1.0,
-            "currency": "keys"
+            "currency": "metal"
         },
         "Non-Craftable": {
             "price": 15.0,
@@ -11422,7 +11422,7 @@
     "Bubble Pipe": {
         "Craftable": {
             "price": 1.0,
-            "currency": "keys"
+            "currency": "metal"
         },
         "Non-Craftable": {
             "price": 3.33,
@@ -12028,7 +12028,7 @@
     "Furious Fukaamigasa": {
         "Craftable": {
             "price": 1.0,
-            "currency": "keys"
+            "currency": "metal"
         },
         "Non-Craftable": {
             "price": 33.0,
@@ -13462,7 +13462,7 @@
     "Tippler's Tricorne": {
         "Craftable": {
             "price": 1.0,
-            "currency": "keys"
+            "currency": "metal"
         },
         "Non-Craftable": {
             "price": 32.77,
@@ -14032,7 +14032,7 @@
         },
         "Craftable": {
             "price": 1.0,
-            "currency": "keys"
+            "currency": "metal"
         }
     },
     "Genuine Hitt Mann Badge": {
@@ -14604,7 +14604,7 @@
     "Itsy Bitsy Spyer": {
         "Craftable": {
             "price": 1.0,
-            "currency": "keys"
+            "currency": "metal"
         },
         "Non-Craftable": {
             "price": 6.0,
@@ -14784,7 +14784,7 @@
     "Coffin Kit": {
         "Craftable": {
             "price": 1.0,
-            "currency": "keys"
+            "currency": "metal"
         },
         "Non-Craftable": {
             "price": 2.55,
@@ -14908,7 +14908,7 @@
     "Infernal Orchestrina": {
         "Craftable": {
             "price": 1.0,
-            "currency": "keys"
+            "currency": "metal"
         },
         "Non-Craftable": {
             "price": 2.0,
@@ -15202,7 +15202,7 @@
         },
         "Craftable": {
             "price": 1.0,
-            "currency": "keys"
+            "currency": "metal"
         }
     },
     "Collector's Ali Baba's Wee Booties": {
@@ -15860,7 +15860,7 @@
     "Li'l Snaggletooth": {
         "Craftable": {
             "price": 1.0,
-            "currency": "keys"
+            "currency": "metal"
         }
     },
     "Strange Li'l Snaggletooth": {
@@ -15912,7 +15912,7 @@
     "Bolted Bushman": {
         "Craftable": {
             "price": 1.0,
-            "currency": "keys"
+            "currency": "metal"
         }
     },
     "Preventative Measure": {
@@ -15930,7 +15930,7 @@
     "Crocodile Smile": {
         "Craftable": {
             "price": 1.0,
-            "currency": "keys"
+            "currency": "metal"
         },
         "Non-Craftable": {
             "price": 33.0,
@@ -17554,7 +17554,7 @@
     "Frymaster": {
         "Craftable": {
             "price": 1.0,
-            "currency": "keys"
+            "currency": "metal"
         }
     },
     "Strange Frymaster": {
@@ -17930,7 +17930,7 @@
     "Platinum Pickelhaube": {
         "Craftable": {
             "price": 1.0,
-            "currency": "keys"
+            "currency": "metal"
         }
     },
     "Strange Platinum Pickelhaube": {
@@ -18476,7 +18476,7 @@
     "Tin Pot": {
         "Craftable": {
             "price": 1.0,
-            "currency": "keys"
+            "currency": "metal"
         }
     },
     "Trencher's Tunic": {
@@ -18800,7 +18800,7 @@
         },
         "Craftable": {
             "price": 1.0,
-            "currency": "keys"
+            "currency": "metal"
         }
     },
     "Strange Scarecrow": {
@@ -18860,7 +18860,7 @@
     "Stocking Stuffer": {
         "Craftable": {
             "price": 1.0,
-            "currency": "keys"
+            "currency": "metal"
         },
         "Non-Craftable": {
             "price": 50.0,
@@ -18882,7 +18882,7 @@
     "Couvre Corner": {
         "Craftable": {
             "price": 1.0,
-            "currency": "keys"
+            "currency": "metal"
         },
         "Non-Craftable": {
             "price": 30.44,
@@ -19072,7 +19072,7 @@
     "Gas Guzzler": {
         "Craftable": {
             "price": 1.0,
-            "currency": "keys"
+            "currency": "metal"
         }
     },
     "Strange Wrangler": {
@@ -20188,7 +20188,7 @@
     "Dr. Whoa": {
         "Craftable": {
             "price": 1.0,
-            "currency": "keys"
+            "currency": "metal"
         },
         "Non-Craftable": {
             "price": 2.33,
@@ -20786,7 +20786,7 @@
     "Heroic Companion Badge": {
         "Craftable": {
             "price": 1.0,
-            "currency": "keys"
+            "currency": "metal"
         }
     },
     "Genuine Robot Chicken Hat": {
@@ -20810,7 +20810,7 @@
     "War Head": {
         "Craftable": {
             "price": 1.0,
-            "currency": "keys"
+            "currency": "metal"
         }
     },
     "Void Monk Hair": {
@@ -21062,7 +21062,7 @@
     "Fortune Hunter": {
         "Craftable": {
             "price": 1.0,
-            "currency": "keys"
+            "currency": "metal"
         }
     },
     "Genuine Doe-Boy": {
@@ -21552,7 +21552,7 @@
     "Teddy Roosebelt": {
         "Craftable": {
             "price": 1.0,
-            "currency": "keys"
+            "currency": "metal"
         },
         "Non-Craftable": {
             "price": 25.66,
@@ -21844,7 +21844,7 @@
     "Surgeon's Side Satchel": {
         "Craftable": {
             "price": 1.0,
-            "currency": "keys"
+            "currency": "metal"
         },
         "Non-Craftable": {
             "price": 2.94,
@@ -21932,7 +21932,7 @@
     "Bolgan Family Crest": {
         "Craftable": {
             "price": 1.0,
-            "currency": "keys"
+            "currency": "metal"
         }
     },
     "Genuine Bolgan Family Crest": {
@@ -22428,7 +22428,7 @@
     "Tools of the Trade": {
         "Craftable": {
             "price": 1.0,
-            "currency": "keys"
+            "currency": "metal"
         }
     },
     "Strange Iron Lung": {
@@ -22540,7 +22540,7 @@
         },
         "Craftable": {
             "price": 1.0,
-            "currency": "keys"
+            "currency": "metal"
         }
     },
     "Strange Rump-o'-Lantern": {
@@ -22552,7 +22552,7 @@
     "Rump-o'-Lantern": {
         "Craftable": {
             "price": 1.0,
-            "currency": "keys"
+            "currency": "metal"
         },
         "Non-Craftable": {
             "price": 4.33,
@@ -22738,7 +22738,7 @@
     "Dry Gulch Gulp": {
         "Craftable": {
             "price": 1.0,
-            "currency": "keys"
+            "currency": "metal"
         }
     },
     "Strange Joe-on-the-Go": {
@@ -22750,7 +22750,7 @@
     "Joe-on-the-Go": {
         "Craftable": {
             "price": 1.0,
-            "currency": "keys"
+            "currency": "metal"
         }
     },
     "Strange Puggyback": {
@@ -22792,7 +22792,7 @@
     "Koala Compact": {
         "Craftable": {
             "price": 1.0,
-            "currency": "keys"
+            "currency": "metal"
         }
     },
     "Strange Koala Compact": {
@@ -23776,7 +23776,7 @@
     "Prairie Heel Biters": {
         "Craftable": {
             "price": 1.0,
-            "currency": "keys"
+            "currency": "metal"
         },
         "Non-Craftable": {
             "price": 25.0,
@@ -24138,7 +24138,7 @@
     "Brainiac Goggles": {
         "Craftable": {
             "price": 1.0,
-            "currency": "keys"
+            "currency": "metal"
         },
         "Non-Craftable": {
             "price": 18.0,
@@ -24148,7 +24148,7 @@
     "Russian Rocketeer": {
         "Craftable": {
             "price": 1.0,
-            "currency": "keys"
+            "currency": "metal"
         }
     },
     "Genuine Russian Rocketeer": {
@@ -24776,7 +24776,7 @@
         },
         "Craftable": {
             "price": 1.0,
-            "currency": "keys"
+            "currency": "metal"
         }
     },
     "Wicked Windfall Case": {
@@ -25350,7 +25350,7 @@
     "Whale Bone Charm": {
         "Craftable": {
             "price": 1.0,
-            "currency": "keys"
+            "currency": "metal"
         }
     },
     "Genuine Whale Bone Charm": {
@@ -25678,7 +25678,7 @@
     "Pocket Purrer": {
         "Craftable": {
             "price": 1.0,
-            "currency": "keys"
+            "currency": "metal"
         }
     },
     "Strange Pocket Purrer": {
@@ -26084,7 +26084,7 @@
     "Sandvich Safe": {
         "Craftable": {
             "price": 1.0,
-            "currency": "keys"
+            "currency": "metal"
         },
         "Non-Craftable": {
             "price": 25.0,
@@ -26816,7 +26816,7 @@
     "Surgeon's Stethoscope": {
         "Craftable": {
             "price": 1.0,
-            "currency": "keys"
+            "currency": "metal"
         },
         "Non-Craftable": {
             "price": 6.55,
@@ -26862,7 +26862,7 @@
     "Moonman Backpack": {
         "Craftable": {
             "price": 1.0,
-            "currency": "keys"
+            "currency": "metal"
         },
         "Non-Craftable": {
             "price": 8.825,
@@ -26896,7 +26896,7 @@
     "Lonesome Loafers": {
         "Craftable": {
             "price": 1.0,
-            "currency": "keys"
+            "currency": "metal"
         }
     },
     "Strange Lonesome Loafers": {
@@ -26986,7 +26986,7 @@
     "Pyrobotics Pack": {
         "Craftable": {
             "price": 1.0,
-            "currency": "keys"
+            "currency": "metal"
         }
     },
     "Pyro Shark": {
