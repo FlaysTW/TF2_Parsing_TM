@@ -62,6 +62,7 @@ class TM_Parsing():
         while self.parsing_status_processing_items:
             if not self.items_queue.empty():
                 try:
+                    print(self.items_queue.qsize())
                     raw = self.items_queue.get()
                     name = raw['name']
                     classid = raw['classid']
