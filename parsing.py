@@ -278,7 +278,7 @@ class TM_Parsing():
                                     self.count_items_url += 1
                                     self.count_items_cache += 1
                                     self.last_item_url = {'name': name, 'id': f"{classid}-{instanceid}",'date': datetime.datetime.now()}
-                                    #self.items_queue.put({'name': name, 'classid': classid, 'instanceid': instanceid})
+                                    self.items_queue.put({'name': name, 'classid': classid, 'instanceid': instanceid})
                         else:
                             logger.error(f'URL ERROR status code {r.status_code}')
                 else:
