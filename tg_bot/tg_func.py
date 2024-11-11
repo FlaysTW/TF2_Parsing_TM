@@ -35,6 +35,8 @@ class Telegram_functions():
                 logger.exception(ex)
             time.sleep(0.0001)
         logger.debug('Disable pool messages')
+        logger.debug('Create new thread pool messages')
+        self.create_thread_pool()
 
     @logger.catch()
     def start_thread_pool(self):
