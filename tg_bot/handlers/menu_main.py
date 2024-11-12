@@ -4,7 +4,7 @@ from telebot import TeleBot
 from telebot.types import Message, InlineKeyboardMarkup, CallbackQuery
 from utils.loging import logger
 from utils.config import config
-from tg_bot.callbacks_data import menu_page
+from tg_bot.callbacks_data import menu_page, settings_menu
 from parsing import TM_Parsing
 from tg_bot.utils import create_button
 from utils.loading_data import items_bd_list, items_bd_list_unusual, items_cache
@@ -14,8 +14,6 @@ def run(bot: TeleBot, tm: TM_Parsing):
     @bot.message_handler(commands=['menu'])
     @logger.catch()
     def command_menu(message: Message):
-        thread_mes_url = 'Работает' if tm.parsing_thread_url.is_alive() else 'Не работает'
-        thread_mes_websocket = 'Работает' if tm.parsing_thread_websocket.is_alive() else 'Не работает'
         mes = (f'Информация:\n\n'
                f'Кол-во пройденых предметов по ссылкам: {tm.count_items_url}\n'
                f'Кол-во пройденых предметов по вебсокету: {tm.count_items_websocket}\n\n'
@@ -28,13 +26,7 @@ def run(bot: TeleBot, tm: TM_Parsing):
                f'Предметов в кэше: {tm.count_items_cache}\n\n'
                f'Курсы:\n'
                f'1 key - {config["currency"]["keys"]} ₽\n'
-               f'1 metal - {config["currency"]["metal"]} ₽\n\n'
-               f'Потоки:\n'
-               f'Поток ссылки: {thread_mes_url}\n'
-               f'Поток вебсокет: {thread_mes_websocket}\n\n'
-               f'Кол-во айтемов в очереди для потоков: {tm.items_queue.qsize()}'
-               f'Кол-во активных потоков: {threading.active_count()}\n'
-               f'Кол-во неотправленых сообщений: {tm.bot.count_message_not}')
+               f'1 metal - {config["currency"]["metal"]} ₽')
         markup = InlineKeyboardMarkup()
         buttons = [create_button('Проверить предмет', menu_page.new('check_id')),  # 0
                    create_button('Открыть базу', menu_page.new('base')),  # 1
@@ -46,7 +38,7 @@ def run(bot: TeleBot, tm: TM_Parsing):
         markup.add(buttons[3], buttons[1])
         markup.add(buttons[0], buttons[2])
         markup.add(buttons[6], buttons[5])
-        markup.add(buttons[4])
+        #markup.add(buttons[4])
         bot.send_message(message.chat.id, mes, reply_markup=markup)
 
     # Кнопка открыть базу
@@ -111,3 +103,55 @@ def run(bot: TeleBot, tm: TM_Parsing):
                 bot.send_message(message.chat.id, f'Неправильный формат!')
         except:
             bot.send_message(message.chat.id, f'Неправильный формат!')
+
+    @logger.catch()
+    @bot.callback_query_handler(func=lambda x: menu_page.filter(page='settings').check(x))
+    def menu_settings(callback: CallbackQuery):
+        bot.answer_callback_query(callback.id)
+        thread_mes_url = 'Работает' if tm.parsing_thread_url.is_alive() else 'Не работает'
+        thread_mes_websocket = 'Работает' if tm.parsing_thread_websocket.is_alive() else 'Не работает'
+        mes = (f'Потоки:\n'
+               f'Поток ссылки: {thread_mes_url}\n'
+               f'Поток вебсокет: {thread_mes_websocket}\n\n'
+               f'Кол-во айтемов в очереди для потоков: {tm.items_queue.qsize()}\n'
+               f'Кол-во активных потоков: {threading.active_count()}\n'
+               f'Кол-во неотправленых сообщений: {tm.bot.count_message_not}\n\n'
+               f'Черный список: {"".join(i + ", " for i in config["blacklist"])[:-2]}')
+        buttons = [create_button('Перезагрузить потоки парсинга', settings_menu.new(type='reload_parsing', dump='')),
+                   create_button('Перезагрузить все потоки', settings_menu.new(type='reload_threads', dump='')),
+                   create_button('Изменить курс', settings_menu.new(type='edit_currency', dump='')),
+                   create_button('Изменить черный список', settings_menu.new(type='edit_black', dump='')),
+                   create_button('Выгрузить предметы из ЧС', settings_menu.new(type='dump', dump='blacklist_items')),
+                   create_button('Выгрузить базу данных', settings_menu.new(type='dump', dump='db')),
+                   create_button('Выгрузить кэш', settings_menu.new(type='dump', dump='cache')),
+                   create_button('Выгрузить ПНБ', settings_menu.new(type='dump', dump='iff')),
+                   create_button('Очистить кэш', settings_menu.new(type='clear_cache', dump=''))]
+        markup = InlineKeyboardMarkup()
+        markup.add(*buttons, row_width=1)
+        bot.edit_message_text(mes, callback.message.chat.id, callback.message.message_id, reply_markup=markup)
+
+    @logger.catch()
+    @bot.callback_query_handler(func=lambda x: settings_menu.filter(type='dump').check(x))
+    def dump_file(callback: CallbackQuery):
+        bot.answer_callback_query(callback.id)
+        data = settings_menu.parse(callback.data)
+        bot.edit_message_text('Подождите', callback.message.chat.id, callback.message.message_id)
+        file = ''
+        if data['dump'] == 'blacklist_items':
+            file = open('./items/blacklist.txt', 'rb')
+        elif data['dump'] == 'db':
+            file = open('./items/items.json')
+            unusual = open('./items/unusual_items.json')
+            bot.send_document(callback.message.chat.id, file)
+            bot.send_document(callback.message.chat.id, unusual)
+            bot.delete_message(callback.message.chat.id, callback.message.message_id)
+            bot.send_message(callback.message.chat.id, 'Готово!')
+            return 0
+        elif data['dump'] == 'cache':
+            file = open('./items/cache.json')
+        elif data['dump'] == 'iff':
+            file = open('./items/future.json')
+        if file:
+            bot.send_document(callback.message.chat.id, file)
+            bot.delete_message(callback.message.chat.id, callback.message.message_id)
+            bot.send_message(callback.message.chat.id, 'Готово!')

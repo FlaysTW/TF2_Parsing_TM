@@ -68,7 +68,8 @@ class TM_Parsing():
                     instanceid = raw['instanceid']
 
                     if not any(i in name for i in ['Casemaker']):
-                        if any(i in name for i in ['kit', 'Kit', 'Tour of Duty Ticket', 'Mann Co. Supply Crate Key', 'Refined Metal', ' Case', 'Create', 'Mann Co. Supply Munition']):  # TODO: Blacklist
+                        if any(i in name for i in config['blacklist']):  # TODO: Blacklist
+
                             continue
 
                     for repl in ['Series ']:
@@ -163,7 +164,7 @@ class TM_Parsing():
                     if item['currency'] == 'metal':
                         message +=  f'Цена в базе: {round(item["price"] * config["currency"]["metal"] / config["currency"]["keys"],2)} keys, {round(item["price"] * config["currency"]["metal"],2)} ₽\n'
                     else:
-                        message += f'Цена в базе: {item["price"]} keys, {item["price"] * config["currency"]["keys"]} ₽\n'
+                        message += f'Цена в базе: {item["price"]} keys, {round(item["price"] * config["currency"]["keys"],2)} ₽\n'
 
                     message += f'\nhttps://tf2.tm/en/item/{classid}-{instanceid}'
 

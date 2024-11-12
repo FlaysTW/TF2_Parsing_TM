@@ -1,0 +1,7 @@
+{
+  "currency": {
+    "metal": 2.9,
+    "keys": 171.0
+  },
+  "blacklist": ["kit", "Kit", "Tour of Duty Ticket", "Mann Co. Supply Crate Key", "Refined Metal", " Case", "Create", "Mann Co. Supply Munition"]
+}
