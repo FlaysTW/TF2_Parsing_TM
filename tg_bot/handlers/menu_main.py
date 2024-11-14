@@ -163,8 +163,8 @@ def run(bot: TeleBot, tm: TM_Parsing):
         else:
             bot.edit_message_text(mes, callback.message.chat.id, callback.message.message_id, reply_markup=markup)
 
-    @logger.catch()
     @bot.callback_query_handler(func=lambda x: settings_menu.filter(type='dump').check(x))
+    @logger.catch()
     def dump_file(callback: CallbackQuery):
         bot.answer_callback_query(callback.id)
         data = settings_menu.parse(callback.data)
