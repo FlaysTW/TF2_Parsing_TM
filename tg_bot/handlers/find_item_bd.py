@@ -4,8 +4,9 @@ from telebot.types import Message, InlineKeyboardMarkup, InlineKeyboardButton, C
 from tg_bot.callbacks_data import menu_page, list_menu, base_item
 from utils.loging import logger
 from utils.loading_data import items_bd, items_bd_list, items_bd_list_unusual, items_unusual_bd
-from tg_bot.utils import create_button
+from tg_bot.utils import create_button, cancel
 from utils.config import config
+import json
 
 def get_search_items(text):
     result = []
@@ -29,9 +30,18 @@ def run(bot: TeleBot, tm):
         bot.edit_message_text('Пришлите название предмета', callback.message.chat.id, callback.message.message_id)
         bot.register_next_step_handler_by_chat_id(callback.message.chat.id, menu_base_search_item)
 
+    @bot.callback_query_handler(func= lambda x: menu_page.filter(page='find_item_new').check(x))
+    def find_item_new(callback: CallbackQuery):
+        mes = bot.send_message(callback.message.chat.id, 'Пум...')
+        callback.message = mes
+        menu_base_find_item(callback)
+
     # Результат поиска
     @logger.catch()
     def menu_base_search_item(message: Message, callback: CallbackQuery = None, page=0):
+        if message.text == '0':
+            cancel(bot, message.chat.id)
+
         if callback == None:
             text = message.text.lower()
         else:
@@ -124,6 +134,7 @@ def run(bot: TeleBot, tm):
                                         type='del'))
         ]
         markup.add(*buttons)
+        markup.add(create_button('Найти еще предмет', menu_page.new(page='find_item_new')))
         message_id = ''
         messages = telebot.util.smart_split(mes)
         for i in range(len(messages)):
@@ -150,6 +161,7 @@ def run(bot: TeleBot, tm):
     def base_menu_edit_item(callback: CallbackQuery):
         data = base_item.parse(callback.data)
         item_name = items_bd_list_unusual[int(data['item'])] if data['unusual'] else items_bd_list[int(data['item'])]
+        print(data)
 
         if data['type'] == 'add_type':
             if data['status'] == 'add_craft':
@@ -236,7 +248,44 @@ def run(bot: TeleBot, tm):
                 mes = 'Пришлите название эффекта (0 для отмены):'
             bot.edit_message_text(mes, callback.message.chat.id, callback.message.message_id)
             bot.register_next_step_handler(callback.message, base_menu_item_send, 'select_effect', callback)
-
+        elif data['type'] == 'del':
+            mes = 'Вы уверены?'
+            markup = InlineKeyboardMarkup()
+            markup.add(*[create_button('Да', base_item.new(item=data['item'], unusual=data['unusual'], craft='', select='',status=data['status'], type='sure')),
+                       create_button('Нет', base_item.new(item=data['item'], unusual=data['unusual'], craft='', select='', status=data['status'], type='cancel'))])
+            bot.edit_message_text(mes, callback.message.chat.id, callback.message.message_id, reply_markup=markup)
+        elif data['type'] == 'sure':
+            if data['unusual']:
+                item = items_unusual_bd.pop(item_name)
+                items_bd_list_unusual.pop(int(data['item']))
+            else:
+                item = items_bd.pop(item_name)
+                items_bd_list.pop(int(data['item']))
+            try:
+                if data['unusual']:
+                    with open('./items/unusual_items.json', 'w', encoding='UTF-8') as file:
+                        json.dump(items_unusual_bd, file, indent=4, ensure_ascii=False)
+                else:
+                    with open('./items/items.json', 'w', encoding='utf-8') as file:
+                        json.dump(items_bd, file, indent=4, ensure_ascii=False)
+                markup = InlineKeyboardMarkup()
+                markup.add(create_button('Найти еще предмет', menu_page.new(page='find_item_new')))
+                bot.edit_message_text(f'Предмет {item_name} успешно удален!', callback.message.chat.id, callback.message.message_id, reply_markup=markup)
+            except:
+                lis = []
+                if data['unusual']:
+                    items_unusual_bd[item_name] = item
+                    items_bd_list_unusual.append(item_name)
+                    lis = items_bd_list_unusual
+                else:
+                    items_bd[item_name] = item
+                    items_bd_list.append(item_name)
+                    lis = items_bd_list
+                bot.edit_message_text('Ошибка при удалении!',callback.message.chat.id, callback.message.message_id)
+                mes = bot.send_message(callback.message.chat.id, 'Пум..')
+                callback.message = mes
+                callback.data = base_item.new(item=len(lis) - 1, unusual=data['unusual'], craft='', select='', status='', type='del')
+                base_menu_edit_item(callback)
         if callback.id != -1:
             bot.answer_callback_query(callback.id)
 
@@ -274,11 +323,15 @@ def run(bot: TeleBot, tm):
                             'new_currency']
                         items_unusual_bd[item_name][data['craft']]['Particles'][effects[int(data['unusual'])]].pop(
                             'new_currency')
+                        with open('./items/unusual_items.json', 'w', encoding='UTF-8') as file:
+                            json.dump(items_unusual_bd, file, indent=4, ensure_ascii=False)
                     else:
                         items_bd[item_name][data['craft']]['price'] = price
                         items_bd[item_name][data['craft']]['currency'] = items_bd[item_name][data['craft']][
                             'new_currency']
                         items_bd[item_name][data['craft']].pop('new_currency')
+                        with open('./items/items.json', 'w', encoding='utf-8') as file:
+                            json.dump(items_bd, file, indent=4, ensure_ascii=False)
                 except:
                     bot.send_message(message.chat.id, 'Неверный формат!')
                     bot.send_message(message.chat.id, 'Пришлите ценик (0 для отмены):')

@@ -1,7 +1,26 @@
 {
-  "currency": {
-    "metal": 2.9,
-    "keys": 171.0
-  },
-  "blacklist": ["kit", "Kit", "Tour of Duty Ticket", "Mann Co. Supply Crate Key", "Refined Metal", " Case", "Create", "Mann Co. Supply Munition"]
+    "currency": {
+        "metal": 2.9,
+        "keys": 171
+    },
+    "blacklist": [
+        "kit",
+        "Kit",
+        "Tour of Duty Ticket",
+        "Mann Co. Supply Crate Key",
+        "Refined Metal",
+        " Case",
+        "Create",
+        "Mann Co. Supply Munition"
+    ],
+    "filter": {
+        "notification": {
+            "30": 95,
+            "200": 70,
+            "500": 50,
+            "1000": 30,
+            "3000": 20
+        },
+        "autobuy": {}
+    }
 }

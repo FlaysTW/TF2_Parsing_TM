@@ -3,14 +3,27 @@ from telebot.types import Message, InlineKeyboardMarkup, CallbackQuery
 from utils.loging import logger
 from utils.loading_data import items_bd, items_bd_list, items_bd_list_unusual, items_unusual_bd, items_cache
 from utils.config import config
-from tg_bot.callbacks_data import menu_page, add_item_select
+from tg_bot.callbacks_data import menu_page, add_item_select, item_message
 import json
 from tg_bot.utils import create_button, cancel
-
+from telebot.util import antiflood
 
 add_item = [0]
 
 def run(bot: TeleBot, tm):
+    @logger.catch()
+    @bot.callback_query_handler(func=lambda x: item_message.filter(type='add_bd').check(x))
+    def add_item_in_db(callback: CallbackQuery):
+        bot.answer_callback_query(callback.id)
+        data = item_message.parse(callback.data)
+        try:
+            name = items_cache[f'{data["classid"]}-{data["instanceid"]}']['name']
+            bot.send_message(callback.message.chat.id, f"Добавление предмета <a href='https://t.me/c/{str(callback.message.chat.id)[4:]}/{callback.message.message_thread_id}/{callback.message.message_id}'>{name}</a> в базу данных:", parse_mode='HTML')
+            callback.message.text = name
+            base_add_item_select(callback.message, 'name')
+        except:
+            bot.send_message(callback.message.chat.id,f"<a href='https://t.me/c/{str(callback.message.chat.id)[4:]}/{callback.message.message_thread_id}/{callback.message.message_id}'>Предмет</a> уже удален из кэша!",parse_mode='HTML')
+
     # Запуск добавление предмета
     @bot.callback_query_handler(func=lambda x: menu_page.filter(page='add_item').check(x))
     @logger.catch()
@@ -32,6 +45,7 @@ def run(bot: TeleBot, tm):
                 item_name = message.text
             if item_name == '0':
                 cancel(bot, message.chat.id)
+                add_item[0] = 0
                 return 0
             if 'Unusual' == item_name:
                 bot.send_message(message.chat.id, 'Предмет Unusual невозможно добавить!')
@@ -80,6 +94,7 @@ def run(bot: TeleBot, tm):
                     add_item[0]['cancel_status'] = 'unusual-craft'
                     if add_item[0]['cancel_full']:
                         cancel(bot, message.chat.id)
+                        add_item[0] = 0
                         return 0
                     elif len(list(add_item[0][add_item[0]['name']][add_item[0]['last-craft']]['Particles'])) == 0:
                         add_item[0][add_item[0]['name']].pop(add_item[0]['last-craft'])
@@ -108,6 +123,7 @@ def run(bot: TeleBot, tm):
                 if add_item[0]['cancel_status'] == '':
                     if message.text == '0' and add_item[0]['cancel_full']:
                         cancel(bot, message.chat.id)
+                        add_item[0] = 0
                         return 0
                     elif message.text == '0':
                         if add_item[0]['unusual_flag']:
@@ -191,6 +207,7 @@ def run(bot: TeleBot, tm):
         if data['type'] == 'cancel':
             if add_item[0]['cancel_full'] == True or data['select'] == 'last':
                 cancel(bot, callback.message.chat.id, callback.message)
+                add_item[0] = 0
                 return 0
             else:
                 add_item[0]['cancel_status'] = data['select']
@@ -229,6 +246,7 @@ def run(bot: TeleBot, tm):
         elif data['type'] == 'sure':
             if data['select'] == 'no':
                 cancel(bot, callback.message.chat.id, callback.message)
+                add_item[0] = 0
                 return 0
             if data['select'] == 'yes':
                 base_add_item_select(callback.message, 'name')
@@ -245,8 +263,17 @@ def run(bot: TeleBot, tm):
                     items_bd_list.append(add_item[0]['name'])
                     with open('./items/items.json', 'w', encoding='utf-8') as file:
                         json.dump(items_bd, file, indent=4, ensure_ascii=False)
+                count_dels = 0
+                cache = items_cache.copy()
+                for id_cache in cache:
+                    if items_cache[id_cache]['name'] == add_item[0]['name']:
+                        message = items_cache.pop(id_cache)['message']
+                        count_dels += 1
+                        tm.count_items_cache -= 1
+                        antiflood(bot.edit_message_text, **{'text': 'УДАЛЕН ИЗ КЭША!\n' + message['text'], 'chat_id': message['chat']['id'], 'message_id': message['message_id']})
+
                 bot.edit_message_text(callback.message.text, callback.message.chat.id, callback.message.message_id)
-                bot.send_message(callback.message.chat.id, 'Успешно добавлено!')
+                bot.send_message(callback.message.chat.id, f'Успешно добавлено!\nИз кэша удалено {count_dels} предметов')
             except Exception as ex:
                 bot.edit_message_text(callback.message.text, callback.message.chat.id, callback.message.message_id)
                 bot.send_message(callback.message.chat.id,

@@ -11,7 +11,9 @@ def main():
     #tm.start_parsing()
     # tm.start_thread_processing()
     # tm.start_thread_parsing_websocket()
-    tm.thread_processing_item("Bill's Hat", 171097181,6260347386)
+    # tm.start_thread_save_cache()
+    #tm.thread_processing_item("Bill's Hat", 171097181,6260347386)
+
 
 def test():
     cur = {}

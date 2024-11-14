@@ -42,6 +42,8 @@ class TM_Parsing():
     last_item_url = {'name': None, 'id': '0-0', 'date': datetime.datetime.now()}
     last_item_websocket = {'name': None, 'id': '0-0', 'date': datetime.datetime.now()}
 
+    blacklist_items = []
+
     def __init__(self):
         logger.debug('Starting parsing')
         self.create_thread_parsing_url()
@@ -55,6 +57,7 @@ class TM_Parsing():
         self.start_thread_parsing_websocket()
         self.start_thread_processing()
         self.start_thread_save_cache()
+        self.bot.start_thread_pool()
 
     @logger.catch()
     def processing_items(self):
@@ -69,7 +72,8 @@ class TM_Parsing():
 
                     if not any(i in name for i in ['Casemaker']):
                         if any(i in name for i in config['blacklist']):  # TODO: Blacklist
-
+                            self.blacklist_items.append(f'{datetime.datetime.now()}, {name}, {classid}, {instanceid}, https://tf2.tm/en/item/{classid}-{instanceid}')
+                            #print(self.blacklist_items)
                             continue
 
                     for repl in ['Series ']:
@@ -173,7 +177,7 @@ class TM_Parsing():
                 message_thread_id = 4
                 message = f'{name}{effect}\n{non_craftable}\n{mes_description}'
                 message += f'https://tf2.tm/en/item/{classid}-{instanceid}'
-                self.bot.send_item(message, classid, instanceid, message_thread_id=message_thread_id)
+                self.bot.send_item(message, classid, instanceid, markup_undefiend=True, message_thread_id=message_thread_id)
             else:
                 message_thread_id = 3
                 message = f'{name}{effect}\n{non_craftable}\n{mes_description}'
@@ -195,6 +199,20 @@ class TM_Parsing():
                 logger.error('Thread save cache error')
                 logger.exception(ex)
                 self.bot.send_message('Ошибка при сохранение кэша!\nОбратитесь к администратору и сделайте дамп кэша!')
+
+            try:
+                t = self.blacklist_items.copy()
+                text = ''
+                for i in t:
+                    self.blacklist_items.pop(0)
+                    text += i + '\n'
+                with open('./items/blacklist.txt', 'a', encoding='utf-8') as file:
+                    file.write(text)
+                logger.success('Successful blacklist items')
+            except Exception as ex:
+                logger.error('Thread save cache error')
+                logger.exception(ex)
+                self.bot.send_message('Ошибка при сохранение предметов в черном списке!\nОбратитесь к администратору и сделайте дамп кэша!')
             time.sleep(5)
         logger.debug('Stop thread save cache')
         logger.debug('Create new thread save cache')
@@ -204,6 +222,7 @@ class TM_Parsing():
     def start_thread_save_cache(self):
         if not self.thread_save_cache.is_alive():
             logger.debug('Starting save cache')
+            self.status_save_cache = True
             self.thread_save_cache.start()
         else:
             logger.error('Thread save cache working')
@@ -212,6 +231,7 @@ class TM_Parsing():
     def start_thread_processing(self):
         if not self.parsing_thread_processing_items.is_alive():
             logger.debug('Starting processing')
+            self.parsing_status_processing_items = True
             self.parsing_thread_processing_items.start()
         else:
             logger.error('Thread processing working')
@@ -219,20 +239,18 @@ class TM_Parsing():
     @logger.catch()
     def start_thread_parsing_url(self):
         if not self.parsing_thread_url.is_alive():
-            if self.parsing_status_url == False:
-                logger.debug('Starting urls parsing')
-                self.parsing_status_url = True
-                self.parsing_thread_url.start()
+            logger.debug('Starting urls parsing')
+            self.parsing_status_url = True
+            self.parsing_thread_url.start()
         else:
             logger.error('Thread parsing URL working')
 
     @logger.catch()
     def start_thread_parsing_websocket(self):
         if not self.parsing_thread_websocket.is_alive():
-            if self.parsing_status_websocket == False:
-                logger.debug('Starting websockets parsing')
-                self.parsing_status_websocket = True
-                self.parsing_thread_websocket.start()
+            logger.debug('Starting websockets parsing')
+            self.parsing_status_websocket = True
+            self.parsing_thread_websocket.start()
         else:
             logger.debug('Thread parsing websocket not created')
             logger.error('Thread parsing websocket working')
