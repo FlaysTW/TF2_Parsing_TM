@@ -90,7 +90,7 @@ class TM_Parsing():
                     #print(name, self.items_queue.qsize(), threading.active_count())
                 except Exception as ex:
                     logger.exception(ex)
-            time.sleep(0.5) #TODO: ИЗМЕНИТЬ на 0.0001
+            time.sleep(0.1) #TODO: ИЗМЕНИТЬ на 0.0001
         logger.debug('Stop processing thread')
         logger.debug('Create new thread processing')
         self.create_thread_processing()
