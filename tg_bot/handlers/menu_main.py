@@ -111,13 +111,14 @@ def run(bot: TeleBot, tm: TM_Parsing):
         except:
             bot.send_message(message.chat.id, f'Неправильный формат!')
 
-    @logger.catch()
     @bot.callback_query_handler(func=lambda x: menu_page.filter(page='menu').check(x))
+    @logger.catch()
     def menu_callback(callback: CallbackQuery):
         command_menu(callback.message, callback)
 
-    @logger.catch()
+
     @bot.callback_query_handler(func=lambda x: menu_page.filter(page='settings').check(x))
+    @logger.catch()
     def menu_settings(callback: CallbackQuery, mess=False):
         bot.answer_callback_query(callback.id)
         thread_mes_url = 'Работает' if tm.parsing_thread_url.is_alive() else 'Не работает'
@@ -189,8 +190,8 @@ def run(bot: TeleBot, tm: TM_Parsing):
             bot.delete_message(callback.message.chat.id, callback.message.message_id)
             bot.send_message(callback.message.chat.id, 'Готово!')
 
-    @logger.catch()
     @bot.callback_query_handler(func=lambda x: settings_menu.filter(type='reload').check(x))
+    @logger.catch()
     def reload(callback: CallbackQuery):
         bot.answer_callback_query(callback.id)
         data = settings_menu.parse(callback.data)
@@ -229,8 +230,8 @@ def run(bot: TeleBot, tm: TM_Parsing):
         bot.delete_message(wait_message.chat.id, wait_message.message_id)
         bot.send_message(wait_message.chat.id, 'Все потоки перезагружены!')
 
-    @logger.catch()
     @bot.callback_query_handler(func=lambda x: settings_menu.filter(type='edit_currency').check(x))
+    @logger.catch()
     def edit_currency(callback: CallbackQuery):
         bot.answer_callback_query(callback.id)
         data = settings_menu.parse(callback.data)
@@ -267,8 +268,9 @@ def run(bot: TeleBot, tm: TM_Parsing):
                 bot.register_next_step_handler(message, edit_currency_mes)
                 return 0
 
-    @logger.catch()
+
     @bot.callback_query_handler(func=lambda x: settings_menu.filter(type='edit_black').check(x))
+    @logger.catch()
     def edit_black_callback(callback: CallbackQuery):
         if callback.id != -1:
             bot.answer_callback_query(callback.id)
@@ -326,8 +328,8 @@ def run(bot: TeleBot, tm: TM_Parsing):
                     callback.id = -1
                     edit_black_callback(callback)
 
-    @logger.catch()
     @bot.callback_query_handler(func=lambda x: settings_menu.filter(type='clear_cache').check(x))
+    @logger.catch()
     def clear_cache(callback: CallbackQuery):
         bot.answer_callback_query(callback.id)
         data = settings_menu.parse(callback.data)
@@ -344,8 +346,9 @@ def run(bot: TeleBot, tm: TM_Parsing):
             tm.count_items_cache = 0
             bot.edit_message_text('Кэш успешно удален!', callback.message.chat.id, callback.message.message_id)
 
-    @logger.catch()
+
     @bot.callback_query_handler(func=lambda x: settings_menu.filter(type='edit_filter').check(x))
+    @logger.catch()
     def edit_filter(callback: CallbackQuery):
         if callback != -1:
             bot.answer_callback_query(callback.id)

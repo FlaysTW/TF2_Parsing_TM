@@ -31,6 +31,7 @@ def run(bot: TeleBot, tm):
         bot.register_next_step_handler_by_chat_id(callback.message.chat.id, menu_base_search_item)
 
     @bot.callback_query_handler(func= lambda x: menu_page.filter(page='find_item_new').check(x))
+    @logger.catch()
     def find_item_new(callback: CallbackQuery):
         mes = bot.send_message(callback.message.chat.id, 'Пум...')
         callback.message = mes

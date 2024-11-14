@@ -11,8 +11,9 @@ from telebot.util import antiflood
 add_item = [0]
 
 def run(bot: TeleBot, tm):
-    @logger.catch()
+    
     @bot.callback_query_handler(func=lambda x: item_message.filter(type='add_bd').check(x))
+    @logger.catch()
     def add_item_in_db(callback: CallbackQuery):
         bot.answer_callback_query(callback.id)
         data = item_message.parse(callback.data)
@@ -34,6 +35,7 @@ def run(bot: TeleBot, tm):
         bot.register_next_step_handler(callback.message, base_add_item_select, 'name')
 
     # Проверка название предмета и регистрация сообщения
+
     @logger.catch()
     def base_add_item_select(message: Message, type: str):
         if type == 'name':
