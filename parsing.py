@@ -280,12 +280,12 @@ class TM_Parsing():
         logger.debug('Start thread urls parsing')
         while self.parsing_status_url:
             try:
-                r = requests.get('https://tf2.tm/itemdb/current_440.json')
+                r = requests.get('https://tf2.tm/itemdb/current_440.json', timeout=5)
                 if r.status_code == 200:
                     tm_tf2_name_file_bd = r.json()['db']
                     if tm_tf2_name_file_bd != self.last_tm_tf2_bd:
                         self.last_tm_tf2_bd = tm_tf2_name_file_bd
-                        r = requests.get(f'https://tf2.tm/itemdb/{tm_tf2_name_file_bd}')
+                        r = requests.get(f'https://tf2.tm/itemdb/{tm_tf2_name_file_bd}', timeout=5)
                         if r.status_code == 200:
                             raw_tf2_bd = r.text.split('\n')[:-1]
                             tf2_db = csv.reader(raw_tf2_bd, delimiter=';')
