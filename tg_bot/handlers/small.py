@@ -6,6 +6,8 @@ from telebot.types import Message
 from parsing import TM_Parsing
 from telebot.util import antiflood
 from utils import loading_data
+from utils.loading_data import items_cache, future, items_bd_list, items_bd
+from utils.config import config
 def run(bot: TeleBot, tm: TM_Parsing):
     @bot.message_handler(commands=['stop'])
     def stop(message: Message):
@@ -87,3 +89,94 @@ def run(bot: TeleBot, tm: TM_Parsing):
     def huy(message: Message):
         with open('./test.json', 'w', encoding='utf-8') as file:
             json.dump(message.json, file, indent=4, ensure_ascii=False)
+
+    @bot.message_handler(commands=['add'])
+    def add(message: Message):
+        args = extract_arguments(message.text)
+        name, url, price = args.split('\n')
+        i = 1
+        if config['test_get_item']:
+            i = int(list(config['test_get_item'])[-1]) + 1
+        config['test_get_item'][str(i)] = {'name': name, 'url': url, 'price': price}
+        with open('./data/config.json', 'w', encoding='utf-8') as file:
+            json.dump(config, file, ensure_ascii=False, indent=4)
+        bot.send_message(message.chat.id, 'Добавлено')
+
+    @bot.message_handler(commands=['items'])
+    def items_list(message: Message):
+        mes = ''
+        for i in config['test_get_item']:
+            mes += f'{i} {config["test_get_item"][i]["name"]} {config["test_get_item"][i]["price"]}\n'
+        bot.send_message(message.chat.id, mes)
+
+    @bot.message_handler(commands=['get'])
+    def get(message: Message):
+        args = extract_arguments(message.text)
+        item = config["test_get_item"][args]
+
+        url = item['url']
+        ids = url.split('/')[-1]
+        classid, instanceid =  ids.split('-')
+        price = float(item['price'])
+        name = item['name']
+
+        flag = False
+        priority = False
+        flag_autobuy = False
+        if f"{classid}-{instanceid}" not in future['autobuy']:
+            if f"{classid}-{instanceid}" not in items_cache:
+                if name in items_bd_list:
+                    min_price = 99999999
+                    for craft in items_bd[name]:
+                        min_price = min(items_bd[name][craft]['price'] * config['currency'][items_bd[name][craft]['currency']], min_price)
+                    print(min_price)
+                    finily_price = 0
+                    for filter_price in config['filter']['autobuy']:
+                        if finily_price:
+                            break
+                        if filter_price == list(config['filter']['autobuy'])[-1]:
+                            finily_price = min_price * ((100 - config['filter']['autobuy'][filter_price]) / 100)
+                        elif min_price <= float(filter_price):
+                            finily_price = min_price * ((100 - config['filter']['autobuy'][filter_price]) / 100)
+                    print(price, finily_price)
+                    if price <= finily_price:
+                        flag_autobuy = True
+                        print('Покупаем предмет по фильтру', price, finily_price)
+                if not flag_autobuy:
+                    print(f"{classid}-{instanceid}" not in future['notification'])
+                    if f"{classid}-{instanceid}" not in future['notification']:
+                            flag = True
+                    elif price * 100 <= future['notification'][f"{classid}-{instanceid}"]['procent']:
+                        print(price * 100, future['notification'][f"{classid}-{instanceid}"]['procent'])
+                        priority = True
+                        flag = True
+                        future['notification'].pop(f"{classid}-{instanceid}")
+        elif price * 100 <= future['autobuy'][f"{classid}-{instanceid}"]['procent']:
+            print("Покупаем предмет") # Покупка предмета
+            future['autobuy'].pop(f"{classid}-{instanceid}")
+
+        # flag = False
+        # priority = False
+        # if f"{classid}-{instanceid}" not in future['notification']:
+        #     if f"{classid}-{instanceid}" not in items_cache:
+        #         flag = True
+        # elif price * 100 <= future['notification'][f"{classid}-{instanceid}"]['procent']:
+        #     priority = True
+        #     flag = True
+        #     future['notification'].pop(f"{classid}-{instanceid}")
+
+        print(flag)
+
+        if flag * 0:
+            items_cache[f"{ids}"] = {'name': name}
+            tm.items_queue.put({'name': name, 'classid': classid, 'instanceid': instanceid, 'priority': priority})
+            bot.send_message(message.chat.id, f'Предмет {name} успешно ушел на проверку!\n{ids}')
+        else:
+            bot.send_message(message.chat.id, f'Предмет {name} {classid}-{instanceid} есть в кэше!')
+
+    @bot.message_handler(commands=['test'])  # TODO: Command test
+    def command_test(message: Message):
+        bot.send_message(message.chat.id, f'Chat id: {message.chat.id}\nThread id: {message.message_thread_id}',
+                         message_thread_id=message.message_thread_id)
+
+

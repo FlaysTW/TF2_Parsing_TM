@@ -7,7 +7,7 @@ from utils.loging import logger
 from websockets.sync import client as ws
 import json
 import queue
-from utils.loading_data import items_bd, items_bd_list, items_bd_list_unusual, items_unusual_bd, items_cache
+from utils.loading_data import items_bd, items_bd_list, items_bd_list_unusual, items_unusual_bd, items_cache, future
 from utils.config import config
 import csv
 
@@ -69,6 +69,7 @@ class TM_Parsing():
                     name = raw['name']
                     classid = raw['classid']
                     instanceid = raw['instanceid']
+                    priority = raw['priority']
 
                     if not any(i in name for i in ['Casemaker']):
                         if any(i in name for i in config['blacklist']):  # TODO: Blacklist
@@ -78,6 +79,7 @@ class TM_Parsing():
 
                     for repl in ['Series ']:
                         name = name.replace(repl, '')
+
                     if not any(i in name for i in
                                ['The Bitter Taste of Defeat and Lime', 'The Essential Accessories',
                                 'The Value of Teamwork', 'The Concealed Killer Weapons Case',
@@ -85,7 +87,8 @@ class TM_Parsing():
                                 'The Powerhouse Weapons Case']):
                         if 'The ' == name[:4] or 'the ' == name[:4]:
                             name = name[4:]
-                    threading.Thread(target=self.thread_processing_item, args=[name, classid, instanceid]).start()
+
+                    threading.Thread(target=self.thread_processing_item, args=[name, classid, instanceid, priority]).start()
 
                     #print(name, self.items_queue.qsize(), threading.active_count())
                 except Exception as ex:
@@ -97,7 +100,7 @@ class TM_Parsing():
 
 
     @logger.catch()
-    def thread_processing_item(self,name, classid, instanceid):
+    def thread_processing_item(self,name, classid, instanceid, priority):
         r = requests.get(f'https://tf2.tm/api/ItemInfo/{classid}_{instanceid}/en/?key={self.TM_KEY}', timeout=20)
         #print(classid, instanceid)
         #print(r.json())
@@ -106,38 +109,39 @@ class TM_Parsing():
             item = ""
             full_description = ''
             mes_description = ''
+            price_item_raw = float(resp['min_price'])
             price_item = int(resp['min_price']) / 100
             effect = ''
             non_craftable = ''
             quality = False
             message_thread_id = 7
+            spell = False
             if resp['description']:
                 for des in resp['description']:
-                    des = des['value']
-                    full_description += des + '\n'
-                    if 'Effect: ' in des:
-                        effect = des.split('Effect: ')[1].strip()
+                    des_text = des['value']
+                    full_description += des_text + '\n'
+                    if 'Effect: ' in des_text:
+                        effect = des_text.split('Effect: ')[1].strip()
                         continue
-                    elif ': ' in des and des[-1] == ')' and des[1] == '(':
-                        mes_description += des + '\n'
+                    elif ': ' in des_text and des_text[-1] == ')' and des_text[1] == '(':
+                        mes_description += des_text + '\n'
                         continue
-                    elif 'Paint Color:' in des:
-                        mes_description += des + '\n'
+                    elif 'Paint Color:' in des_text:
+                        mes_description += des_text + '\n'
                         continue
-                    elif 'spell only' in des:
-                        mes_description += des + '\n'
+                    elif 'spell only' in des_text and des['color'] == '7ea9d1':
+                        mes_description += des_text + '\n'
                         message_thread_id = 5
+                        spell = True
                         continue
 
             if mes_description:
                 mes_description = 'Описание:\n' + mes_description + '\n\n'
 
-            if any(i in name for i in ['(Field-Tested)', '(Battle Scarred)', '(Well-Worn)', '(Factory New)', '(Minimal Wear)']):  # TODO: Quality
-                quality = True
-
-            if name in items_bd_list or name in items_bd_list_unusual and quality == False:
+            if name in items_bd_list or name in items_bd_list_unusual:
                 if 'Unusual' == name[:7]:
-                    message_thread_id = 6
+                    if not spell:
+                        message_thread_id = 6
                     if 'Not Usable in Crafting' not in full_description:
                         if 'Craftable' in items_unusual_bd[name]:
                             if effect in items_unusual_bd[name]['Craftable']['Particles']:
@@ -160,29 +164,56 @@ class TM_Parsing():
                             item = items_bd[name]['Non-Craftable']
                             non_craftable = 'Non-Craftable\n'
                             price_db = item['price'] * config['currency'][item['currency']]
+
+            if any(i in name for i in ['(Field-Tested)', '(Battle Scarred)', '(Well-Worn)', '(Factory New)', '(Minimal Wear)']) and not item:
+                quality = True
+
             if item:
-                if price_item <= price_db * 0.9:
-                    message = f'{name}{effect}\n{non_craftable}\n{mes_description}'
+                finily_price = 0
+                for filter_price in config['filter']['notification']:
+                    if finily_price:
+                        break
+                    if filter_price == list(config['filter']['notification'])[-1]:
+                        finily_price = price_db * ((100 - config['filter']['notification'][filter_price]) / 100)
+                    elif price_db <= float(filter_price):
+                        finily_price = price_db * (( 100 - config['filter']['notification'][filter_price]) / 100)
 
-                    message += f'Цена на ТМ: {round(price_item / config["currency"]["keys"], 2)} keys, {price_item} ₽\n'
-                    if item['currency'] == 'metal':
-                        message +=  f'Цена в базе: {round(item["price"] * config["currency"]["metal"] / config["currency"]["keys"],2)} keys, {round(item["price"] * config["currency"]["metal"],2)} ₽\n'
+                if finily_price or spell or priority:
+                    if price_item_raw == -1 and not spell:
+                        future['notification'][f'{classid}-{instanceid}'] = {'procent': finily_price * 100 - 1, 'name': name, 'old_price': price_item_raw}
+                        items_cache.pop(f'{classid}-{instanceid}')
+                    elif price_item <= finily_price or spell or priority:
+                        message = f'{name}{effect}\n{non_craftable}\n{mes_description}'
+
+                        message += f'Цена на ТМ: {round(price_item / config["currency"]["keys"], 2)} keys, {price_item} ₽\n'
+                        if item['currency'] == 'metal':
+                            message +=  f'Цена в базе: {round(item["price"] * config["currency"]["metal"] / config["currency"]["keys"],2)} keys, {round(item["price"] * config["currency"]["metal"],2)} ₽\n'
+                        else:
+                            message += f'Цена в базе: {item["price"]} keys, {round(item["price"] * config["currency"]["keys"],2)} ₽\n'
+
+                        message += f'\nhttps://tf2.tm/en/item/{classid}-{instanceid}'
+                        self.bot.send_item(message, classid, instanceid, price_item_raw, markup_flag=True, message_thread_id=message_thread_id)
                     else:
-                        message += f'Цена в базе: {item["price"]} keys, {round(item["price"] * config["currency"]["keys"],2)} ₽\n'
-
-                    message += f'\nhttps://tf2.tm/en/item/{classid}-{instanceid}'
-
-                    self.bot.send_item(message, classid, instanceid, markup_flag=True, message_thread_id=message_thread_id)
+                        future['notification'][f'{classid}-{instanceid}'] = {'procent': finily_price * 100 - 1, 'name': name, 'old_price': price_item_raw}
+                        items_cache.pop(f'{classid}-{instanceid}')
+            elif spell:
+                message_thread_id = 5
+                message = f'{name}{effect}\n{non_craftable}\n{mes_description}'
+                message += f'Цена на ТМ: {round(price_item / config["currency"]["keys"], 2)} keys, {price_item} ₽\n\n'
+                message += f'https://tf2.tm/en/item/{classid}-{instanceid}'
+                self.bot.send_item(message, classid, instanceid, price_item_raw, markup_undefiend=True, message_thread_id=message_thread_id)
             elif quality:
                 message_thread_id = 4
                 message = f'{name}{effect}\n{non_craftable}\n{mes_description}'
+                message += f'Цена на ТМ: {round(price_item / config["currency"]["keys"], 2)} keys, {price_item} ₽\n\n'
                 message += f'https://tf2.tm/en/item/{classid}-{instanceid}'
-                self.bot.send_item(message, classid, instanceid, markup_undefiend=True, message_thread_id=message_thread_id)
+                self.bot.send_item(message, classid, instanceid, price_item_raw, markup_undefiend=True, message_thread_id=message_thread_id)
             else:
                 message_thread_id = 3
                 message = f'{name}{effect}\n{non_craftable}\n{mes_description}'
+                message += f'Цена на ТМ: {round(price_item / config["currency"]["keys"], 2)} keys, {price_item} ₽\n\n'
                 message += f'https://tf2.tm/en/item/{classid}-{instanceid}'
-                self.bot.send_item(message, classid, instanceid, markup_undefiend=True, message_thread_id=message_thread_id)
+                self.bot.send_item(message, classid, instanceid, price_item_raw, markup_undefiend=True, message_thread_id=message_thread_id)
         else:
             pass
 
@@ -213,6 +244,16 @@ class TM_Parsing():
                 logger.error('Thread save cache error')
                 logger.exception(ex)
                 self.bot.send_message('Ошибка при сохранение предметов в черном списке!\nОбратитесь к администратору и сделайте дамп кэша!')
+
+            try:
+                t = future.copy()
+                with open('./items/future.json', 'w', encoding='utf-8') as file:
+                    json.dump(t, file, indent=4, ensure_ascii=False)
+                logger.success('Successful future items')
+            except Exception as ex:
+                logger.error('Thread save cache error')
+                logger.exception(ex)
+                self.bot.send_message('Ошибка при сохранение кэша!\nОбратитесь к администратору и сделайте дамп кэша!')
             time.sleep(5)
         logger.debug('Stop thread save cache')
         logger.debug('Create new thread save cache')
@@ -287,18 +328,54 @@ class TM_Parsing():
                         self.last_tm_tf2_bd = tm_tf2_name_file_bd
                         r = requests.get(f'https://tf2.tm/itemdb/{tm_tf2_name_file_bd}', timeout=5)
                         if r.status_code == 200:
-                            raw_tf2_bd = r.text.split('\n')[:-1]
+                            raw_tf2_bd = r.text.split('\n')[1:-1]
                             tf2_db = csv.reader(raw_tf2_bd, delimiter=';')
                             for item in tf2_db:
                                 classid = item[0]
                                 instanceid = item[1]
+                                craft = 'Craftable' if item[8] == "1" else 'Non-Craftable'
+                                price = float(item[2]) / 100
                                 name = item[13]
-                                if f"{classid}-{instanceid}" not in items_cache:
+
+                                flag = False
+                                priority = False
+                                flag_autobuy = False
+                                if f"{classid}-{instanceid}" not in future['autobuy']:
+                                    if f"{classid}-{instanceid}" not in items_cache:
+                                        if name in items_bd_list:
+                                            if craft in items_bd[name]:
+                                                min_price = items_bd[name][craft]['price'] * config['currency'][items_bd[name][craft]['currency']]
+                                                finily_price = 0
+                                                for filter_price in config['filter']['autobuy']:
+                                                    if finily_price:
+                                                        break
+                                                    if filter_price == list(config['filter']['autobuy'])[-1]:
+                                                        finily_price = min_price * ((100 - config['filter']['autobuy'][filter_price]) / 100)
+                                                    elif min_price <= float(filter_price):
+                                                        finily_price = min_price * (
+                                                                (100 - config['filter']['autobuy'][filter_price]) / 100)
+                                                #print(price, finily_price, f'{classid}-{instanceid}', name)
+                                                if price <= finily_price:
+                                                    flag_autobuy = True
+                                                    print('Покупаем предмет по фильтру', price, finily_price)
+                                        if not flag_autobuy:
+                                            if f"{classid}-{instanceid}" not in future['notification']:
+                                                flag = True
+                                            elif price * 100 <= future['notification'][f"{classid}-{instanceid}"][
+                                                'procent']:
+                                                priority = True
+                                                flag = True
+                                                future['notification'].pop(f"{classid}-{instanceid}")
+                                elif price * 100 <= future['autobuy'][f"{classid}-{instanceid}"]['procent']:
+                                    print("Покупаем предмет")  # Покупка предмета
+                                    future['autobuy'].pop(f"{classid}-{instanceid}")
+
+                                if flag:
                                     items_cache[f"{classid}-{instanceid}"] = {'name': name}
                                     self.count_items_url += 1
                                     self.count_items_cache += 1
                                     self.last_item_url = {'name': name, 'id': f"{classid}-{instanceid}",'date': datetime.datetime.now()}
-                                    self.items_queue.put({'name': name, 'classid': classid, 'instanceid': instanceid})
+                                    self.items_queue.put({'name': name, 'classid': classid, 'instanceid': instanceid, 'priority': priority})
                         else:
                             logger.error(f'URL ERROR status code {r.status_code}')
                 else:
@@ -320,12 +397,50 @@ class TM_Parsing():
                     client.send('newitems_tf')
                     while self.parsing_status_websocket:
                         res = json.loads(json.loads(client.recv(timeout=10))['data'])
-                        if f"{res['i_classid']}-{res['i_instanceid']}" not in items_cache:
-                            items_cache[f"{res['i_classid']}-{res['i_instanceid']}"] = {'name': res['i_market_hash_name']}
+                        name = res['i_market_hash_name']
+                        classid = res['i_classid']
+                        instanceid = res['i_instanceid']
+                        price = res['ui_price']
+
+                        flag = False
+                        priority = False
+                        flag_autobuy = False
+                        if f"{classid}-{instanceid}" not in future['autobuy']:
+                            if f"{classid}-{instanceid}" not in items_cache:
+                                if name in items_bd_list:
+                                    min_price = 99999999
+                                    for craft in items_bd[name]:
+                                        min_price = min(items_bd[name][craft]['price'] * config['currency'][
+                                            items_bd[name][craft]['currency']], min_price)
+                                    finily_price = 0
+                                    for filter_price in config['filter']['autobuy']:
+                                        if finily_price:
+                                            break
+                                        if filter_price == list(config['filter']['autobuy'])[-1]:
+                                            finily_price = min_price * (
+                                                        (100 - config['filter']['autobuy'][filter_price]) / 100)
+                                        elif min_price <= float(filter_price):
+                                            finily_price = min_price * (
+                                                        (100 - config['filter']['autobuy'][filter_price]) / 100)
+                                    if price <= finily_price:
+                                        flag_autobuy = True
+                                if not flag_autobuy:
+                                    if f"{classid}-{instanceid}" not in future['notification']:
+                                        flag = True
+                                    elif price * 100 <= future['notification'][f"{classid}-{instanceid}"]['procent']:
+                                        priority = True
+                                        flag = True
+                                        future['notification'].pop(f"{classid}-{instanceid}")
+                        elif price * 100 <= future['autobuy'][f"{classid}-{instanceid}"]['procent']:
+                            print("Покупаем предмет")  # Покупка предмета
+                            future['autobuy'].pop(f"{classid}-{instanceid}")
+
+                        if flag:
+                            items_cache[f"{classid}-{instanceid}"] = {'name': name}
                             self.count_items_websocket += 1
                             self.count_items_cache += 1
-                            self.last_item_websocket = {'name': res['i_market_hash_name'], 'id': f"{res['i_classid']}-{res['i_instanceid']}", 'date': datetime.datetime.now()}
-                            self.items_queue.put({'name': res['i_market_hash_name'], 'classid': res['i_classid'], 'instanceid': res['i_instanceid']})
+                            self.last_item_websocket = {'name': name, 'id': f"{classid}-{instanceid}", 'date': datetime.datetime.now()}
+                            self.items_queue.put({'name': name, 'classid': classid, 'instanceid': instanceid, 'priority': priority})
             except Exception as ex:
                 logger.exception(f'WEBSOCKET {ex}')
         logger.debug('Stop thread websocket parsing')

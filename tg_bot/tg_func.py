@@ -60,20 +60,18 @@ class Telegram_functions():
         logger.debug('Thread pool messages created successful')
 
     @logger.catch()
-    def send_item(self, message, classid, instanceid, message_thread_id, markup_flag=False, markup_undefiend=False):
+    def send_item(self, message, classid, instanceid, price, message_thread_id, markup_flag=False, markup_undefiend=False):
         if markup_flag:
-            data_item = {'classid': classid, 'instanceid': instanceid}
+            data_item = {'classid': classid, 'instanceid': instanceid, 'price': price}
             markup = InlineKeyboardMarkup()
             buttons = [InlineKeyboardButton(text='Купить', callback_data=item_message.new(**data_item, type='buy')),
                        InlineKeyboardButton(text='Удалить из кэша', callback_data=item_message.new(**data_item, type='del')),
-                       InlineKeyboardButton(text='Прислать если цена понизится', callback_data=item_message.new(**data_item, type='not')),
-                       InlineKeyboardButton(text='Купить если цена понизится', callback_data=item_message.new(**data_item, type='buyo'))]
+                       InlineKeyboardButton(text='Добавить предмет в ПНБ', callback_data=item_message.new(**data_item, type='pnb'))]
             markup.add(buttons[0], buttons[1])
             markup.add(buttons[2])
-            markup.add(buttons[3])
             self.messages_queue.put({'chat_id': self.chat_id, 'text': message, 'message_thread_id': message_thread_id, 'reply_markup': markup, 'write_cache': data_item})
         elif markup_undefiend:
-            data_item = {'classid': classid, 'instanceid': instanceid}
+            data_item = {'classid': classid, 'instanceid': instanceid, 'price': price}
             markup = InlineKeyboardMarkup()
             buttons = [InlineKeyboardButton(text='Удалить из кэша', callback_data=item_message.new(**data_item, type='del')),
                        InlineKeyboardButton(text='Добавить в базу данных', callback_data=item_message.new(**data_item, type='add_bd'))]
