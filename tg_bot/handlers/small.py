@@ -129,7 +129,6 @@ def run(bot: TeleBot, tm: TM_Parsing):
                     min_price = 99999999
                     for craft in items_bd[name]:
                         min_price = min(items_bd[name][craft]['price'] * config['currency'][items_bd[name][craft]['currency']], min_price)
-                    print(min_price)
                     finily_price = 0
                     for filter_price in config['filter']['autobuy']:
                         if finily_price:
@@ -138,12 +137,10 @@ def run(bot: TeleBot, tm: TM_Parsing):
                             finily_price = min_price * ((100 - config['filter']['autobuy'][filter_price]) / 100)
                         elif min_price <= float(filter_price):
                             finily_price = min_price * ((100 - config['filter']['autobuy'][filter_price]) / 100)
-                    print(price, finily_price)
                     if price <= finily_price:
                         flag_autobuy = True
                         print('Покупаем предмет по фильтру', price, finily_price)
                 if not flag_autobuy:
-                    print(f"{classid}-{instanceid}" not in future['notification'])
                     if f"{classid}-{instanceid}" not in future['notification']:
                             flag = True
                     elif price * 100 <= future['notification'][f"{classid}-{instanceid}"]['procent']:

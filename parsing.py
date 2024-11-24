@@ -169,6 +169,31 @@ class TM_Parsing():
                 quality = True
 
             if item:
+                flag_autobuy = False
+                autobuy_price = 0
+                for filter_price in config['filter']['autobuy']:
+                    if autobuy_price:
+                        break
+                    if filter_price == list(config['filter']['autobuy'])[-1]:
+                        autobuy_price = price_db * ((100 - config['filter']['autobuy'][filter_price]) / 100)
+                    elif price_db <= float(filter_price):
+                        autobuy_price = price_db * ((100 - config['filter']['autobuy'][filter_price]) / 100)
+                if price_item <= autobuy_price:
+                    flag_autobuy = True
+                    print('Покупаем предмет по фильтру', price_item, autobuy_price)
+
+                if flag_autobuy:
+                    logger.info('Попытка купить предмет!')
+                    mes = (f'ТЕСТ!\n'
+                           f'Покупаем предмет по фильтру 3 этап обработки\n'
+                           f'Название предмета: {name}\n'
+                           f'Айди: {classid}-{instanceid}\n'
+                           f'Цена тм: {price_item}\n'
+                           f'Цена в базе: {price_db}\n'
+                           f'Цена в базе с фильтром: {autobuy_price}')
+                    print(mes + '\n\n')
+                    self.bot.send_item(mes, classid, instanceid, price_item, 2)
+
                 finily_price = 0
                 for filter_price in config['filter']['notification']:
                     if finily_price:
@@ -352,12 +377,19 @@ class TM_Parsing():
                                                     if filter_price == list(config['filter']['autobuy'])[-1]:
                                                         finily_price = min_price * ((100 - config['filter']['autobuy'][filter_price]) / 100)
                                                     elif min_price <= float(filter_price):
-                                                        finily_price = min_price * (
-                                                                (100 - config['filter']['autobuy'][filter_price]) / 100)
+                                                        finily_price = min_price * ((100 - config['filter']['autobuy'][filter_price]) / 100)
                                                 #print(price, finily_price, f'{classid}-{instanceid}', name)
                                                 if price <= finily_price:
                                                     flag_autobuy = True
-                                                    print('Покупаем предмет по фильтру', price, finily_price)
+                                                    mes = (f'ТЕСТ!\n'
+                                                           f'Покупаем предмет по фильтру 1 этап обработки\n'
+                                                           f'Название предмета: {name}\n'
+                                                           f'Айди: {classid}-{instanceid}\n'
+                                                           f'Цена тм: {price}\n'
+                                                           f'Цена в базе: {min_price}\n'
+                                                           f'Цена в базе с фильтром: {finily_price}')
+                                                    print(mes + '\n\n')
+                                                    self.bot.send_item(mes, classid, instanceid, price, 2)
                                         if not flag_autobuy:
                                             if f"{classid}-{instanceid}" not in future['notification']:
                                                 flag = True
@@ -367,7 +399,14 @@ class TM_Parsing():
                                                 flag = True
                                                 future['notification'].pop(f"{classid}-{instanceid}")
                                 elif price * 100 <= future['autobuy'][f"{classid}-{instanceid}"]['procent']:
-                                    print("Покупаем предмет")  # Покупка предмета
+                                    mes = (f'ТЕСТ!\n'
+                                           f'Покупаем предмет по ПНБ\n'
+                                           f'Название предмета: {name}\n'
+                                           f'Айди: {classid}-{instanceid}\n'
+                                           f'Цена тм: {price}\n'
+                                           f'{future["autobuy"][f"{classid}-{instanceid}"]["procent"]}')
+                                    print(mes + '\n\n')
+                                    self.bot.send_item(mes, classid, instanceid, price, 2)
                                     future['autobuy'].pop(f"{classid}-{instanceid}")
 
                                 if flag:
@@ -408,7 +447,7 @@ class TM_Parsing():
                         if f"{classid}-{instanceid}" not in future['autobuy']:
                             if f"{classid}-{instanceid}" not in items_cache:
                                 if name in items_bd_list:
-                                    min_price = 99999999
+                                    min_price = 99999999999
                                     for craft in items_bd[name]:
                                         min_price = min(items_bd[name][craft]['price'] * config['currency'][
                                             items_bd[name][craft]['currency']], min_price)
@@ -424,6 +463,14 @@ class TM_Parsing():
                                                         (100 - config['filter']['autobuy'][filter_price]) / 100)
                                     if price <= finily_price:
                                         flag_autobuy = True
+                                        mes = (f'ТЕСТ!\n'
+                                               f'Покупаем предмет по фильтру 1 этап обработки\n'
+                                               f'Название предмета: {name}\n'
+                                               f'Айди: {classid}-{instanceid}\n'
+                                               f'Цена тм: {price}\n'
+                                               f'Цена в базе: {min_price}\n'
+                                               f'Цена в базе с фильтром: {finily_price}')
+                                        print(mes + '\n\n')
                                 if not flag_autobuy:
                                     if f"{classid}-{instanceid}" not in future['notification']:
                                         flag = True
@@ -432,7 +479,13 @@ class TM_Parsing():
                                         flag = True
                                         future['notification'].pop(f"{classid}-{instanceid}")
                         elif price * 100 <= future['autobuy'][f"{classid}-{instanceid}"]['procent']:
-                            print("Покупаем предмет")  # Покупка предмета
+                            mes = (f'ТЕСТ!\n'
+                                   f'Покупаем предмет по ПНБ\n'
+                                   f'Название предмета: {name}\n'
+                                   f'Айди: {classid}-{instanceid}\n'
+                                   f'Цена тм: {price}\n'
+                                   f'{future["autobuy"][f"{classid}-{instanceid}"]["procent"]}')
+                            print(mes + '\n\n')
                             future['autobuy'].pop(f"{classid}-{instanceid}")
 
                         if flag:

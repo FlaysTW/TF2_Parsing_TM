@@ -11,16 +11,41 @@
         "Refined Metal",
         " Case",
         "Create",
-        "Mann Co. Supply Munition"
+        "Mann Co. Supply Munition",
+        "Crate",
+        "Cooler"
     ],
     "filter": {
+        "autobuy": {
+            "30": 95,
+            "200": 80,
+            "500": 60,
+            "1000": 35,
+            "3000": 25
+        },
         "notification": {
             "30": 95,
             "200": 70,
             "500": 50,
             "1000": 30,
             "3000": 20
+        }
+    },
+    "test_get_item": {
+        "1": {
+            "name": "Grenadier's Softcap",
+            "url": "https://tf2.tm/en/item/49702-5561473216",
+            "price": "2105.27"
         },
-        "autobuy": {}
+        "2": {
+            "name": "Haunted Voodoo-Cursed Demoman Soul",
+            "url": "https://tf2.tm/en/item/92550809-11040545",
+            "price": "270.66"
+        },
+        "3": {
+            "name": "Haunted Voodoo-Cursed Demoman Soul",
+            "url": "https://tf2.tm/en/item/92550809-11040545",
+            "price": "99"
+        }
     }
 }
