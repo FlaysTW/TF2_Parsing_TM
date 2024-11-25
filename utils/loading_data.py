@@ -12,7 +12,6 @@ items_bd_list_unusual = [x for x in items_unusual_bd]
 
 with open('./items/cache.json', 'r', encoding='utf-8') as file:
     items_cache = json.load(file)
-items_cache = {}
 
 with open('./items/future.json', 'r', encoding='utf-8') as file:
     future = json.load(file)
