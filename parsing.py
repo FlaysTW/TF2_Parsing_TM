@@ -27,7 +27,7 @@ class TM_Parsing():
     parsing_thread_processing_items: threading.Thread = None
     parsing_status_processing_items = True
 
-    TM_KEY = 'w15eJM678BP8FrcukaujhTCQ66J823M'
+    TM_KEY = 'pOea4N00h1u67gsQC2BSy0FERoV5M1t'
 
     count_items_url = 0
     count_items_websocket = 0
