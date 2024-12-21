@@ -8,7 +8,7 @@ def main():
     tm = TM_Parsing()
     tg = Telegram_Bot(tm)
     #tm.start_thread_parsing_url()
-    #tm.start_parsing()
+    tm.start_parsing()
     #tm.bot.start_thread_pool()
     #tm.start_thread_processing()
     #tm.start_thread_parsing_websocket()
