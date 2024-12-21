@@ -31,6 +31,17 @@
             "3000": 20
         }
     },
+    "keyfilter": {
+        "autobuy": {},
+        "notification": {
+            "dsfsdf": {
+                "100": 30
+            },
+            "hgfhg": {
+                "50": 60
+            }
+        }
+    },
     "test_get_item": {
         "1": {
             "name": "Grenadier's Softcap",
