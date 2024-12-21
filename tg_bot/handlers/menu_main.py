@@ -6,7 +6,7 @@ from telebot import TeleBot
 from telebot.types import Message, InlineKeyboardMarkup, CallbackQuery
 from utils.loging import logger
 from utils.config import config
-from tg_bot.callbacks_data import menu_page, settings_menu, iff_settings
+from tg_bot.callbacks_data import menu_page, settings_menu, iff_settings, autobuy_list
 from parsing import TM_Parsing
 from tg_bot.utils import create_button, cancel
 from utils.loading_data import items_bd_list, items_bd_list_unusual, items_cache, future
@@ -34,7 +34,7 @@ def run(bot: TeleBot, tm: TM_Parsing):
         buttons = [create_button('Проверить предмет', menu_page.new('check_id')),  # 0
                    create_button('Открыть базу', menu_page.new('base')),  # 1
                    create_button('Удалить предмет', menu_page.new('delete_item')),  # 2
-                   create_button('Меню автобая', menu_page.new('autobuy_menu')),  # 3
+                   create_button('Меню автобая', autobuy_list.new(data='')),  # 3
                    create_button('Очистить кэш', menu_page.new('clear_cache')),  # 4
                    create_button('Настройки', menu_page.new('settings')),  # 5
                    create_button('Список ПНБ', menu_page.new('iff'))]  # 6
@@ -46,6 +46,26 @@ def run(bot: TeleBot, tm: TM_Parsing):
             bot.edit_message_text(mes, callback.message.chat.id, callback.message.message_id, reply_markup=markup)
         else:
             bot.send_message(message.chat.id, mes, reply_markup=markup)
+
+    @bot.callback_query_handler(func= lambda x: autobuy_list.filter().check(x))
+    @logger.catch()
+    def autobuy_menu(callback: CallbackQuery):
+        bot.answer_callback_query(callback.id)
+
+        data = autobuy_list.parse(callback.data)
+        if data['data']:
+            setattr(tm, data['data'], not getattr(tm, data['data']))
+
+        mes = (f'Статусы автопокупки:\n\n'
+               f'Spells - {tm.autobuy_spell}\n'
+               f'Unusual - {tm.autobuy_unusual}\n'
+               f'All items - {tm.autobuy_all_items}')
+        markup = InlineKeyboardMarkup()
+        markup.add(create_button(f'Spells - {str(tm.autobuy_spell).replace("False", "❌").replace("True", "✅")}', autobuy_list.new(data='autobuy_spell')))
+        markup.add(create_button(f'Unusual - {str(tm.autobuy_unusual).replace("False", "❌").replace("True", "✅")}', autobuy_list.new(data='autobuy_unusual')))
+        markup.add(create_button(f'All items - {str(tm.autobuy_all_items).replace("False", "❌").replace("True", "✅")}', autobuy_list.new(data='autobuy_all_items')))
+        markup.add(create_button('Вернуться в меню', menu_page.new(page='menu')))
+        bot.edit_message_text(mes, callback.message.chat.id, callback.message.message_id, reply_markup=markup)
 
     @bot.callback_query_handler(func= lambda x: menu_page.filter(page='iff').check(x))
     @logger.catch()
@@ -102,6 +122,7 @@ def run(bot: TeleBot, tm: TM_Parsing):
                 navigation_buttons.append(
                     create_button('Следующая страница', iff_settings.new(page='list', type=data['type'], page_num=page + 1)))
             markup.add(*navigation_buttons)
+            markup.add(create_button('Добавить предмет в ПНБ', iff_settings.new(page='add', type=data['type'], page_num=0)))
             markup.add(create_button('Вернуться в меню', menu_page.new(page='iff')))
             bot.edit_message_text(mes, callback.message.chat.id, callback.message.message_id, reply_markup=markup, parse_mode='HTML')
         elif data['page'] == 'select':
@@ -162,6 +183,15 @@ def run(bot: TeleBot, tm: TM_Parsing):
             mes = 'Пришлите полный айди или частичный (0 для отмены):'
             bot.edit_message_text(mes, callback.message.chat.id, callback.message.message_id)
             bot.register_next_step_handler(callback.message, item_for_future_message,  callback, typ, items, 'find', find_text)
+        elif data['page'] == 'add':
+            mes = 'Пришлите айди предмета 12345-12345 для добавления (0 для отмены):'
+            if data['type'] == 'not':
+                typ = 'notification'
+            elif data['type'] == 'abuy':
+                typ = 'autobuy'
+            bot.edit_message_text(mes, callback.message.chat.id, callback.message.message_id)
+            bot.register_next_step_handler(callback.message, item_for_future_message, callback, typ, items, 'add_item_id', find_text)
+
     @logger.catch()
     def item_for_future_message(message: Message, callback: CallbackQuery, typ, items, page, find_text):
         data = iff_settings.parse(callback.data)
@@ -173,6 +203,9 @@ def run(bot: TeleBot, tm: TM_Parsing):
                 data['page_num'] = 0
             elif page == 'edit':
                 data['page'] = 'select'
+            elif page == 'add_item_name':
+                future[typ].pop(find_text)
+                data['page'] = 'list'
             callback.data = iff_settings.new(**data)
             callback.id = -1
             callback.message = bot.send_message(message.chat.id, 'Пум...')
@@ -210,6 +243,55 @@ def run(bot: TeleBot, tm: TM_Parsing):
                 bot.send_message(message.chat.id, 'Неправильный формат!')
                 bot.send_message(message.chat.id, f'Пришлите новый ценик когда будет {word} предмет (0 для отмены):')
                 bot.register_next_step_handler(callback.message, item_for_future_message,  callback, typ, items, page, find_text)
+        elif page == 'add_item_id':
+            try:
+                ids = message.text
+                if ids.count('-') != 1:
+                    a = 10 / 0
+                future[typ][ids] = {}
+                bot.send_message(message.chat.id, 'Пришлите название предмета для добавления (0 для отмены):')
+                bot.register_next_step_handler(callback.message, item_for_future_message, callback, typ, items, 'add_item_name', ids)
+            except:
+                mes = 'Пришлите айди предмета 12345-12345 для добавления (0 для отмены):'
+                bot.send_message(message.chat.id, 'Неправильный формат!')
+                bot.send_message(message.chat.id, mes)
+                bot.register_next_step_handler(callback.message, item_for_future_message, callback, typ, items,'add_item_id', find_text)
+        elif page == 'add_item_name':
+            name = message.text
+            future[typ][find_text]['name'] = name
+            if typ == 'notification':
+                word = 'прислан'
+            elif typ == 'autobuy':
+                word = 'куплен'
+            mes = f'Пришлите ценик когда будет {word} предмет (0 для отмены):'
+            bot.send_message(message.chat.id, mes)
+            bot.register_next_step_handler(callback.message, item_for_future_message, callback, typ, items, 'add_item_price', find_text)
+        elif page == 'add_item_price':
+            try:
+                price = float(message.text)* 100
+                future[typ][find_text]['procent'] = price
+                future[typ][find_text]['old_price'] = -1
+                if typ == 'notification':
+                    word = 'прислан'
+                elif typ == 'autobuy':
+                    word = 'куплен'
+                bot.send_message(message.chat.id, f"Предмет {find_text} {future[typ][find_text]['name']} будет {word} когда цена станет ниже {round(price/ 100, 2)}")
+                data['page'] = 'list'
+                data.pop('@')
+                callback.data = iff_settings.new(**data)
+                callback.id = -1
+                callback.message = bot.send_message(message.chat.id, 'Пум...')
+                items_for_future_callback(callback)
+            except:
+                if typ == 'notification':
+                    word = 'прислан'
+                elif typ == 'autobuy':
+                    word = 'куплен'
+                mes = f'Пришлите ценик когда будет {word} предмет (0 для отмены):'
+                bot.send_message(message.chat.id, 'Неправильный формат!')
+                bot.send_message(message.chat.id, mes)
+                bot.register_next_step_handler(callback.message, item_for_future_message, callback, typ, items,'add_item_price', find_text)
+
 
     # Кнопка открыть базу
     @bot.callback_query_handler(func=lambda x: menu_page.filter(page='base').check(x))
@@ -290,8 +372,8 @@ def run(bot: TeleBot, tm: TM_Parsing):
         thread_proccesing = 'Работает' if tm.parsing_thread_processing_items.is_alive() else 'Не работает'
         thread_save_cache = 'Работает' if tm.thread_save_cache.is_alive() else 'Не работает'
         thread_pool_message = 'Работает' if tm.bot.thread_pool.is_alive() else 'Не работает'
-        filter_notification_mes = "".join(x + "₽ - " + str(config["filter"]["notification"][x]) + "%\n" for x in config["filter"]["notification"])
-        filter_autobuy_mes = "".join(x + "₽ - " + str(config["filter"]["autobuy"][x]) + "%\n" for x in config["filter"]["autobuy"])
+        filter_notification_mes = "\t\t".join(x + "₽ - " + str(config["filter"]["notification"][x]) + "%\n" for x in config["filter"]["notification"])
+        filter_autobuy_mes = "\t\t".join(x + "₽ - " + str(config["filter"]["autobuy"][x]) + "%\n" for x in config["filter"]["autobuy"])
         mes = (f'Потоки:\n'
                f'Поток ссылки: {thread_mes_url}\n'
                f'Поток вебсокет: {thread_mes_websocket}\n'
@@ -303,10 +385,10 @@ def run(bot: TeleBot, tm: TM_Parsing):
                f'Кол-во неотправленых сообщений: {tm.bot.count_message_not}\n\n'
                f'Черный список: {"".join(i + ", " for i in config["blacklist"])[:-2]}\n\n'
                f'Фильтр:\n'
-               f'Уведомления:\n'
-               f'{filter_notification_mes}\n'
-               f'Автопокупка:\n'
-               f'{filter_autobuy_mes}\n'
+               f'\tУведомления:\n'
+               f'\t\t{filter_notification_mes}\n'
+               f'\tАвтопокупка:\n'
+               f'\t\t{filter_autobuy_mes}\n'
                f'Курсы:\n'
                f'1 key - {config["currency"]["keys"]} ₽\n'
                f'1 metal - {config["currency"]["metal"]} ₽')
@@ -315,6 +397,7 @@ def run(bot: TeleBot, tm: TM_Parsing):
                    create_button('Изменить курс', settings_menu.new(type='edit_currency', dump='')),
                    create_button('Изменить черный список', settings_menu.new(type='edit_black', dump='')),
                    create_button('Изменить фильтр', settings_menu.new(type='edit_filter', dump='')),
+                   create_button('Изменить ключевой фильтр', settings_menu.new(type='edit_keyfilter', dump='')),
                    create_button('Выгрузить предметы из ЧС', settings_menu.new(type='dump', dump='blacklist_items')),
                    create_button('Выгрузить базу данных', settings_menu.new(type='dump', dump='db')),
                    create_button('Выгрузить кэш', settings_menu.new(type='dump', dump='cache')),
@@ -518,13 +601,13 @@ def run(bot: TeleBot, tm: TM_Parsing):
             bot.answer_callback_query(callback.id)
         data = settings_menu.parse(callback.data)
         if data['dump'] == '':
-            filter_notification_mes = "".join(x + "₽ - " + str(config["filter"]["notification"][x]) + "%\n" for x in config["filter"]["notification"])
-            filter_autobuy_mes = "".join(x + "₽ - " + str(config["filter"]["autobuy"][x]) + "%\n" for x in config["filter"]["autobuy"])
+            filter_notification_mes = "\t\t".join(x + "₽ - " + str(config["filter"]["notification"][x]) + "%\n" for x in config["filter"]["notification"])
+            filter_autobuy_mes = "\t\t".join(x + "₽ - " + str(config["filter"]["autobuy"][x]) + "%\n" for x in config["filter"]["autobuy"])
             mes = (f'Фильтр:\n'
-               f'Уведомления:\n'
-               f'{filter_notification_mes}\n'
-               f'Автопокупка:\n'
-               f'{filter_autobuy_mes}')
+               f'\tУведомления:\n'
+               f'\t\t{filter_notification_mes}\n'
+               f'\tАвтопокупка:\n'
+               f'\t\t{filter_autobuy_mes}')
             markup = InlineKeyboardMarkup()
             markup.add(*[create_button('Добавить фильтр', settings_menu.new(type='edit_filter', dump='add')),
                          create_button('Удалить фильтр', settings_menu.new(type='edit_filter', dump='del'))])
@@ -595,3 +678,120 @@ def run(bot: TeleBot, tm: TM_Parsing):
                 bot.send_message(message.chat.id, 'Неправильный формат!')
                 bot.send_message(message.chat.id, 'Пришлите процент от 1 до 100 (0 для отмены):')
                 bot.register_next_step_handler(callback.message, edit_filter_mes, type, price, callback)
+
+    @bot.callback_query_handler(func=lambda x: settings_menu.filter(type='edit_keyfilter').check(x))
+    @logger.catch()
+    def edit_keywords_filter(callback: CallbackQuery):
+        if callback.id != -1:
+            bot.answer_callback_query(callback.id)
+        data = settings_menu.parse(callback.data)
+        if data['dump'] == '':
+            mes = ('Список ключевых фильтров:\n'
+                   '\tУведомления:\n')
+            for keyword in config['keyfilter']['notification']:
+                mes += f'\t\t{keyword}:\n'
+                for price_filter in config['keyfilter']['notification'][keyword]:
+                    mes += f'\t\t\t{price_filter}₽ - {config["keyfilter"]["notification"][keyword][price_filter]}%\n'
+            mes += '\t\nАвтопокупка:\n'
+            for keyword in config['keyfilter']['autobuy']:
+                mes += f'\t\t{keyword}:\n'
+                for price_filter in config['keyfilter']['autobuy'][keyword]:
+                    mes += f'\t\t\t{price_filter}₽ - {config["keyfilter"]["autobuy"][keyword][price_filter]}%\n'
+            markup = InlineKeyboardMarkup()
+            markup.add(*[create_button('Добавить фильтр', settings_menu.new(type='edit_keyfilter', dump='add')),
+                         create_button('Удалить фильтр', settings_menu.new(type='edit_keyfilter', dump='del'))])
+            markup.add(create_button('Вернуться в меню', menu_page.new(page='settings')))
+            bot.edit_message_text(mes, callback.message.chat.id, callback.message.message_id, reply_markup=markup)
+        elif data['dump'] == 'add' or data['dump'] == 'del':
+            mes = 'Выберите:'
+            markup = InlineKeyboardMarkup()
+            markup.add(*[create_button('Уведомления',
+                                       settings_menu.new(type='edit_keyfilter', dump=f"notification_{data['dump']}s")),
+                         create_button('Автобай',
+                                       settings_menu.new(type='edit_keyfilter', dump=f"autobuy_{data['dump']}s"))])
+            markup.add(create_button('Вернуться в меню', settings_menu.new(type='edit_keyfilter', dump='')))
+            bot.edit_message_text(mes, callback.message.chat.id, callback.message.message_id, reply_markup=markup)
+        elif 'adds' in data['dump']:
+            mes = 'Пришлите ключевое слово, если оно уже есть в списке, то такое же название (0 для отмены):'
+            bot.edit_message_text(mes, callback.message.chat.id, callback.message.message_id)
+            bot.register_next_step_handler(callback.message, edit_keywords_mes, data['dump'], 0, callback, '')
+        elif 'dels' in data['dump']:
+            ty, trash = data['dump'].split('_')
+            mes = 'Выберите ключевое слово из которого хотите удалить:'
+            markup = InlineKeyboardMarkup()
+            markup.add(*[create_button(f'{keywords}',
+                                       settings_menu.new(type='edit_keyfilter', dump=f'{ty}_det_{list(config["keyfilter"][ty]).index(keywords)}')) for keywords in
+                         config['keyfilter'][ty]], row_width=1)
+            markup.add(create_button('Вернуться в меню', settings_menu.new(type='edit_keyfilter', dump='')))
+            bot.edit_message_text(mes, callback.message.chat.id, callback.message.message_id, reply_markup=markup)
+        elif 'det' in data['dump']:
+            ty, trash, num = data['dump'].split('_')
+            mes = 'Выберите который фильтр хотите удалить:'
+            keyword_filter = list(config["keyfilter"][ty])[int(num)]
+            markup = InlineKeyboardMarkup()
+            markup.add(*[create_button(f'{price}₽ - {config["keyfilter"][ty][keyword_filter][price]}%',settings_menu.new(type='edit_keyfilter', dump=f'{ty}_end_{num}_{price}')) for price in config["keyfilter"][ty][keyword_filter]], row_width=1)
+            markup.add(create_button('Вернуться в меню', settings_menu.new(type='edit_keyfilter', dump='')))
+            bot.edit_message_text(mes, callback.message.chat.id, callback.message.message_id, reply_markup=markup)
+        elif 'end' in data['dump']:
+            ty, trash, num, price = data['dump'].split('_')
+            keyword_filter = list(config["keyfilter"][ty])[int(num)]
+            config['keyfilter'][ty][keyword_filter].pop(price)
+            if len(list(config['keyfilter'][ty][keyword_filter])) == 0:
+                config['keyfilter'][ty].pop(keyword_filter)
+            with open('./data/config.json', 'w', encoding='utf-8') as file:
+                json.dump(config, file, ensure_ascii=False, indent=4)
+            callback.data = settings_menu.new(type='edit_keyfilter', dump='')
+            edit_keywords_filter(callback)
+
+    @logger.catch()
+    def edit_keywords_mes(message: Message, type, price, callback, keyword_filter):
+        if message.text == '0':
+            cancel(bot, message.chat.id)
+            ty, trash = type.split('_')
+            if keyword_filter:
+                if keyword_filter in config['keyfilter'][ty]:
+                    if len(config['keyfilter'][ty][keyword_filter]) == 0:
+                        config['keyfilter'][ty].pop(keyword_filter)
+            callback.data = settings_menu.new(type='edit_filter', dump='')
+            mes = bot.send_message(message.chat.id, 'Пум..')
+            callback.message = mes
+            edit_keywords_filter(callback)
+        elif 'adds' in type:
+            keyword_filter_raw = message.text
+            ty, trash = type.split('_')
+            mes = 'Пришлите до какой суммы нужно установить фильтр (0 для отмены):'
+            bot.send_message(message.chat.id, mes)
+            bot.register_next_step_handler(message, edit_keywords_mes, f'{ty}_addtw', price, callback, keyword_filter_raw)
+        elif 'addtw' in type:
+            try:
+                price = int(message.text)
+                mes = 'Пришлите процент от 1 до 100 (0 для отмены):'
+                ty, trash = type.split('_')
+                bot.send_message(message.chat.id, mes)
+                bot.register_next_step_handler(message, edit_keywords_mes, f'{ty}_end', price, callback, keyword_filter)
+            except:
+                bot.send_message(message.chat.id, 'Неправильный формат!')
+                bot.send_message(message.chat.id, 'Пришлите до какой суммы нужно установить фильтр (0 для отмены):')
+                bot.register_next_step_handler(callback.message, edit_keywords_mes, type, price, callback, keyword_filter)
+        elif 'end' in type:
+            try:
+                procent = int(message.text)
+                if procent not in [i for i in range(1, 101)]:
+                    a = 10 / 0
+                mes = 'Пум...'
+                ty, trash = type.split('_')
+                if keyword_filter not in config['keyfilter'][ty]:
+                    config['keyfilter'][ty][keyword_filter] = {}
+                config['keyfilter'][ty][keyword_filter][str(price)] = procent
+                config['keyfilter'][ty][keyword_filter] = dict(sorted(config['keyfilter'][ty][keyword_filter].items(), key=lambda item: int(item[0])))
+                with open('./data/config.json', 'w', encoding='utf-8') as file:
+                    json.dump(config, file, ensure_ascii=False, indent=4)
+                mes = bot.send_message(message.chat.id, mes)
+                callback.data = settings_menu.new(type='edit_keyfilter', dump='')
+                callback.message = mes
+                callback.id = -1
+                edit_keywords_filter(callback)
+            except:
+                bot.send_message(message.chat.id, 'Неправильный формат!')
+                bot.send_message(message.chat.id, 'Пришлите процент от 1 до 100 (0 для отмены):')
+                bot.register_next_step_handler(callback.message, edit_keywords_mes, type, price, callback, keyword_filter)

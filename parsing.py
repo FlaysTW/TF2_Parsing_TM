@@ -44,6 +44,10 @@ class TM_Parsing():
 
     blacklist_items = []
 
+    autobuy_spell = False
+    autobuy_unusual = False
+    autobuy_all_items = False
+
     def __init__(self):
         logger.debug('Starting parsing')
         self.create_thread_parsing_url()
@@ -178,7 +182,7 @@ class TM_Parsing():
                         autobuy_price = price_db * ((100 - config['filter']['autobuy'][filter_price]) / 100)
                     elif price_db <= float(filter_price):
                         autobuy_price = price_db * ((100 - config['filter']['autobuy'][filter_price]) / 100)
-                if price_item <= autobuy_price:
+                if price_item <= autobuy_price and price_item_raw >= 0:
                     flag_autobuy = True
                     print('Покупаем предмет по фильтру', price_item, autobuy_price)
 
@@ -205,9 +209,13 @@ class TM_Parsing():
 
                 if finily_price or spell or priority:
                     if price_item_raw == -1 and not spell:
-                        future['notification'][f'{classid}-{instanceid}'] = {'procent': finily_price * 100 - 1, 'name': name, 'old_price': price_item_raw}
-                        items_cache.pop(f'{classid}-{instanceid}')
-                    elif price_item <= finily_price or spell or priority:
+                        finily_price = -10000
+                        if price_db >= 500:
+                            priority = True
+                            future['notification'][f'{classid}-{instanceid}'] = {'procent': finily_price * 100 - 1,'name': name,'old_price': price_item_raw}
+                            items_cache.pop(f'{classid}-{instanceid}')
+
+                    if price_item <= finily_price or spell or priority:
                         message = f'{name}{effect}\n{non_craftable}\n{mes_description}'
 
                         message += f'Цена на ТМ: {round(price_item / config["currency"]["keys"], 2)} keys, {price_item} ₽\n'
@@ -247,9 +255,9 @@ class TM_Parsing():
         logger.debug('Start thread save cache')
         while self.status_save_cache:
             try:
-                t = items_cache.copy()
+                t1 = items_cache.copy()
                 with open('./items/cache.json', 'w', encoding='utf-8') as file:
-                    json.dump(t, file, indent=4, ensure_ascii=False)
+                    json.dump(t1, file, indent=4, ensure_ascii=False)
                 logger.success('Successful save cache')
             except Exception as ex:
                 logger.error('Thread save cache error')
@@ -257,9 +265,9 @@ class TM_Parsing():
                 self.bot.send_message('Ошибка при сохранение кэша!\nОбратитесь к администратору и сделайте дамп кэша!')
 
             try:
-                t = self.blacklist_items.copy()
+                t2 = self.blacklist_items.copy()
                 text = ''
-                for i in t:
+                for i in t2:
                     self.blacklist_items.pop(0)
                     text += i + '\n'
                 with open('./items/blacklist.txt', 'a', encoding='utf-8') as file:
@@ -271,9 +279,9 @@ class TM_Parsing():
                 self.bot.send_message('Ошибка при сохранение предметов в черном списке!\nОбратитесь к администратору и сделайте дамп кэша!')
 
             try:
-                t = future.copy()
+                t3 = future.copy()
                 with open('./items/future.json', 'w', encoding='utf-8') as file:
-                    json.dump(t, file, indent=4, ensure_ascii=False)
+                    json.dump(t3, file, indent=4, ensure_ascii=False)
                 logger.success('Successful future items')
             except Exception as ex:
                 logger.error('Thread save cache error')
@@ -393,12 +401,12 @@ class TM_Parsing():
                                         if not flag_autobuy:
                                             if f"{classid}-{instanceid}" not in future['notification']:
                                                 flag = True
-                                            elif price * 100 <= future['notification'][f"{classid}-{instanceid}"][
-                                                'procent']:
+                                            elif price * 100 <= future['notification'][f"{classid}-{instanceid}"]['procent'] and price * 100 != future['notification'][f"{classid}-{instanceid}"]['old_price']:
+                                                print(f"{classid}-{instanceid}")
                                                 priority = True
                                                 flag = True
                                                 future['notification'].pop(f"{classid}-{instanceid}")
-                                elif price * 100 <= future['autobuy'][f"{classid}-{instanceid}"]['procent']:
+                                elif price * 100 <= future['autobuy'][f"{classid}-{instanceid}"]['procent'] and price * 100 != future['autobuy'][f"{classid}-{instanceid}"]['old_price']:
                                     mes = (f'ТЕСТ!\n'
                                            f'Покупаем предмет по ПНБ\n'
                                            f'Название предмета: {name}\n'
@@ -409,7 +417,8 @@ class TM_Parsing():
                                     self.bot.send_item(mes, classid, instanceid, price, 2)
                                     future['autobuy'].pop(f"{classid}-{instanceid}")
 
-                                if flag:
+
+                                if flag * 0:
                                     items_cache[f"{classid}-{instanceid}"] = {'name': name}
                                     self.count_items_url += 1
                                     self.count_items_cache += 1
@@ -474,11 +483,11 @@ class TM_Parsing():
                                 if not flag_autobuy:
                                     if f"{classid}-{instanceid}" not in future['notification']:
                                         flag = True
-                                    elif price * 100 <= future['notification'][f"{classid}-{instanceid}"]['procent']:
+                                    elif price * 100 <= future['notification'][f"{classid}-{instanceid}"]['procent'] and price * 100 != future['notification'][f"{classid}-{instanceid}"]['old_price']:
                                         priority = True
                                         flag = True
                                         future['notification'].pop(f"{classid}-{instanceid}")
-                        elif price * 100 <= future['autobuy'][f"{classid}-{instanceid}"]['procent']:
+                        elif price * 100 <= future['autobuy'][f"{classid}-{instanceid}"]['procent'] and price * 100 != future['autobuy'][f"{classid}-{instanceid}"]['old_price']:
                             mes = (f'ТЕСТ!\n'
                                    f'Покупаем предмет по ПНБ\n'
                                    f'Название предмета: {name}\n'
@@ -488,7 +497,7 @@ class TM_Parsing():
                             print(mes + '\n\n')
                             future['autobuy'].pop(f"{classid}-{instanceid}")
 
-                        if flag:
+                        if flag * 0:
                             items_cache[f"{classid}-{instanceid}"] = {'name': name}
                             self.count_items_websocket += 1
                             self.count_items_cache += 1
