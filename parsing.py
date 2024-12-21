@@ -418,7 +418,7 @@ class TM_Parsing():
                                     future['autobuy'].pop(f"{classid}-{instanceid}")
 
 
-                                if flag * 0:
+                                if flag:
                                     items_cache[f"{classid}-{instanceid}"] = {'name': name}
                                     self.count_items_url += 1
                                     self.count_items_cache += 1
@@ -497,7 +497,7 @@ class TM_Parsing():
                             print(mes + '\n\n')
                             future['autobuy'].pop(f"{classid}-{instanceid}")
 
-                        if flag * 0:
+                        if flag:
                             items_cache[f"{classid}-{instanceid}"] = {'name': name}
                             self.count_items_websocket += 1
                             self.count_items_cache += 1
