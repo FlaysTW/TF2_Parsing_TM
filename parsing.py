@@ -10,6 +10,7 @@ import queue
 from utils.loading_data import items_bd, items_bd_list, items_bd_list_unusual, items_unusual_bd, items_cache, future
 from utils.config import config
 import csv
+import copy
 
 class TM_Parsing():
     bot = Telegram_functions()
@@ -300,7 +301,7 @@ class TM_Parsing():
         logger.debug('Start thread save cache')
         while self.status_save_cache:
             try:
-                t1 = items_cache.copy()
+                t1 = copy.deepcopy(items_cache)
                 with open('./items/cache.json', 'w', encoding='utf-8') as file:
                     json.dump(t1, file, indent=4, ensure_ascii=False)
                 logger.success('Successful save cache')
@@ -311,7 +312,7 @@ class TM_Parsing():
                 self.bot.send_message('Ошибка при сохранение кэша!\nОбратитесь к администратору и сделайте дамп кэша!')
 
             try:
-                t2 = self.blacklist_items.copy()
+                t2 = copy.deepcopy(self.blacklist_items)
                 text = ''
                 for i in t2:
                     self.blacklist_items.pop(0)
@@ -326,7 +327,7 @@ class TM_Parsing():
                 self.bot.send_message('Ошибка при сохранение предметов в черном списке!\nОбратитесь к администратору и сделайте дамп кэша!')
 
             try:
-                t3 = future.copy()
+                t3 = copy.deepcopy(future)
                 with open('./items/future.json', 'w', encoding='utf-8') as file:
                     json.dump(t3, file, indent=4, ensure_ascii=False)
                 logger.success('Successful future items')
