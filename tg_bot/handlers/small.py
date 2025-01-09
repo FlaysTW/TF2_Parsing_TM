@@ -126,45 +126,52 @@ def run(bot: TeleBot, tm: TM_Parsing):
         if f"{classid}-{instanceid}" not in future['autobuy']:
             if f"{classid}-{instanceid}" not in items_cache:
                 if name in items_bd_list:
-                    min_price = 99999999
+                    min_price = 99999999999
                     for craft in items_bd[name]:
-                        min_price = min(items_bd[name][craft]['price'] * config['currency'][items_bd[name][craft]['currency']], min_price)
+                        min_price = min(items_bd[name][craft]['price'] * config['currency'][
+                            items_bd[name][craft]['currency']], min_price)
                     finily_price = 0
                     for filter_price in config['filter']['autobuy']:
                         if finily_price:
                             break
                         if filter_price == list(config['filter']['autobuy'])[-1]:
-                            finily_price = min_price * ((100 - config['filter']['autobuy'][filter_price]) / 100)
+                            finily_price = min_price * (
+                                    (100 - config['filter']['autobuy'][filter_price]) / 100)
                         elif min_price <= float(filter_price):
-                            finily_price = min_price * ((100 - config['filter']['autobuy'][filter_price]) / 100)
+                            finily_price = min_price * (
+                                    (100 - config['filter']['autobuy'][filter_price]) / 100)
                     if price <= finily_price:
                         flag_autobuy = True
-                        print('Покупаем предмет по фильтру', price, finily_price)
+                        mes = (f'ТЕСТ!\n'
+                               f'Покупаем предмет по фильтру 1 этап обработки\n'
+                               f'Название предмета: {name}\n'
+                               f'Айди: {classid}-{instanceid}\n'
+                               f'Цена тм: {price}\n'
+                               f'Цена в базе: {min_price}\n'
+                               f'Цена в базе с фильтром: {finily_price}')
+                        print(mes + '\n\n')
                 if not flag_autobuy:
                     if f"{classid}-{instanceid}" not in future['notification']:
-                            flag = True
-                    elif price * 100 <= future['notification'][f"{classid}-{instanceid}"]['procent']:
-                        print(price * 100, future['notification'][f"{classid}-{instanceid}"]['procent'])
+                        flag = True
+                    elif price * 100 <= future['notification'][f"{classid}-{instanceid}"]['procent'] and price * 100 != \
+                            future['notification'][f"{classid}-{instanceid}"]['old_price']:
                         priority = True
                         flag = True
                         future['notification'].pop(f"{classid}-{instanceid}")
-        elif price * 100 <= future['autobuy'][f"{classid}-{instanceid}"]['procent']:
-            print("Покупаем предмет") # Покупка предмета
+        elif price * 100 <= future['autobuy'][f"{classid}-{instanceid}"]['procent'] and price * 100 != \
+                future['autobuy'][f"{classid}-{instanceid}"]['old_price']:
+            mes = (f'ТЕСТ!\n'
+                   f'Покупаем предмет по ПНБ\n'
+                   f'Название предмета: {name}\n'
+                   f'Айди: {classid}-{instanceid}\n'
+                   f'Цена тм: {price}\n'
+                   f'{future["autobuy"][f"{classid}-{instanceid}"]["procent"]}')
+            print(mes + '\n\n')
             future['autobuy'].pop(f"{classid}-{instanceid}")
-
-        # flag = False
-        # priority = False
-        # if f"{classid}-{instanceid}" not in future['notification']:
-        #     if f"{classid}-{instanceid}" not in items_cache:
-        #         flag = True
-        # elif price * 100 <= future['notification'][f"{classid}-{instanceid}"]['procent']:
-        #     priority = True
-        #     flag = True
-        #     future['notification'].pop(f"{classid}-{instanceid}")
 
         print(flag)
 
-        if flag * 0:
+        if flag or flag_autobuy:
             items_cache[f"{ids}"] = {'name': name}
             tm.items_queue.put({'name': name, 'classid': classid, 'instanceid': instanceid, 'priority': priority})
             bot.send_message(message.chat.id, f'Предмет {name} успешно ушел на проверку!\n{ids}')
