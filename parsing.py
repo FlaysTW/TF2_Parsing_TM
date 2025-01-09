@@ -305,6 +305,7 @@ class TM_Parsing():
                     json.dump(t1, file, indent=4, ensure_ascii=False)
                 logger.success('Successful save cache')
             except Exception as ex:
+                logger.error('Save cache error')
                 logger.error('Thread save cache error')
                 logger.exception(ex)
                 self.bot.send_message('Ошибка при сохранение кэша!\nОбратитесь к администратору и сделайте дамп кэша!')
@@ -319,16 +320,18 @@ class TM_Parsing():
                     file.write(text)
                 logger.success('Successful blacklist items')
             except Exception as ex:
+                logger.error('Save blacklist error')
                 logger.error('Thread save cache error')
                 logger.exception(ex)
                 self.bot.send_message('Ошибка при сохранение предметов в черном списке!\nОбратитесь к администратору и сделайте дамп кэша!')
 
             try:
-                t3 = dict(future)
+                t3 = future.copy()
                 with open('./items/future.json', 'w', encoding='utf-8') as file:
                     json.dump(t3, file, indent=4, ensure_ascii=False)
                 logger.success('Successful future items')
             except Exception as ex:
+                logger.error('Save future error')
                 logger.error('Thread save cache error')
                 logger.exception(ex)
                 self.bot.send_message('Ошибка при сохранение кэша!\nОбратитесь к администратору и сделайте дамп кэша!')
