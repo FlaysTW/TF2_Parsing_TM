@@ -3,6 +3,7 @@
         "metal": 2.9,
         "keys": 171
     },
+    "api_key": "nmAfyo6i4k3H2BnbI54VE9Zl9ekKS1w",
     "blacklist": [
         "kit",
         "Kit",
@@ -32,13 +33,20 @@
         }
     },
     "keyfilter": {
-        "autobuy": {},
-        "notification": {
-            "dsfsdf": {
-                "100": 30
+        "autobuy": {
+            "hhhhh": {
+                "999": 5
             },
+            "jjjj": {
+                "777": 9
+            }
+        },
+        "notification": {
             "hgfhg": {
                 "50": 60
+            },
+            "дддд": {
+                "999": 7
             }
         }
     },
@@ -57,6 +65,11 @@
             "name": "Haunted Voodoo-Cursed Demoman Soul",
             "url": "https://tf2.tm/en/item/92550809-11040545",
             "price": "99"
+        },
+        "4": {
+            "name": "The Anger",
+            "url": "https://tf2.tm/item/101798779-92551936",
+            "price": "720"
         }
     }
 }
