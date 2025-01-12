@@ -1,6 +1,9 @@
+import datetime
 import json
 import threading
 import time
+import os
+from pickletools import markobject
 
 from telebot import TeleBot
 from telebot.types import Message, InlineKeyboardMarkup, CallbackQuery
@@ -17,7 +20,12 @@ def run(bot: TeleBot, tm: TM_Parsing):
     @bot.message_handler(commands=['menu'])
     @logger.catch()
     def command_menu(message: Message, callback: CallbackQuery = None):
+        if (datetime.datetime.now() - tm.TM_BALANCE_TIME).seconds >= 60:
+            tm.get_balance()
         mes = (f'Информация:\n\n'
+               f'Аккаунт стима на ТМ: <a href="http://steamcommunity.com/profiles/{tm.TM_STEAM64}">Ссылка</a>\n'
+               f'Баланс: {tm.TM_BALANCE} {tm.TM_CURRENCY}\n'
+               f'Последнее обновление: {tm.TM_BALANCE_TIME}\n\n'
                f'Кол-во пройденых предметов по ссылкам: {tm.count_items_url}\n'
                f'Кол-во пройденых предметов по вебсокету: {tm.count_items_websocket}\n\n'
                f'Последний предмет по ссылкам:\n'
@@ -43,9 +51,9 @@ def run(bot: TeleBot, tm: TM_Parsing):
         markup.add(buttons[6], buttons[5])
         #markup.add(buttons[4])
         if callback:
-            bot.edit_message_text(mes, callback.message.chat.id, callback.message.message_id, reply_markup=markup)
+            bot.edit_message_text(mes, callback.message.chat.id, callback.message.message_id, reply_markup=markup, parse_mode='HTML')
         else:
-            bot.send_message(message.chat.id, mes, reply_markup=markup)
+            bot.send_message(message.chat.id, mes, reply_markup=markup, parse_mode='HTML')
 
     @bot.callback_query_handler(func= lambda x: autobuy_list.filter().check(x))
     @logger.catch()
@@ -57,9 +65,9 @@ def run(bot: TeleBot, tm: TM_Parsing):
             setattr(tm, data['data'], not getattr(tm, data['data']))
 
         mes = (f'Статусы автопокупки:\n\n'
-               f'Spells - {tm.autobuy_spell}\n'
-               f'Unusual - {tm.autobuy_unusual}\n'
-               f'All items - {tm.autobuy_all_items}')
+               f'Spells - {str(tm.autobuy_spell).replace("False", "Отключено").replace("True", "Включено")}\n'
+               f'Unusual - {str(tm.autobuy_unusual).replace("False", "Отключено").replace("True", "Включено")}\n'
+               f'All items - {str(tm.autobuy_all_items).replace("False", "Отключено").replace("True", "Включено")}')
         markup = InlineKeyboardMarkup()
         markup.add(create_button(f'Spells - {str(tm.autobuy_spell).replace("False", "❌").replace("True", "✅")}', autobuy_list.new(data='autobuy_spell')))
         markup.add(create_button(f'Unusual - {str(tm.autobuy_unusual).replace("False", "❌").replace("True", "✅")}', autobuy_list.new(data='autobuy_unusual')))
@@ -366,7 +374,8 @@ def run(bot: TeleBot, tm: TM_Parsing):
     @bot.callback_query_handler(func=lambda x: menu_page.filter(page='settings').check(x))
     @logger.catch()
     def menu_settings(callback: CallbackQuery, mess=False):
-        bot.answer_callback_query(callback.id)
+        if not mess:
+            bot.answer_callback_query(callback.id)
         thread_mes_url = 'Работает' if tm.parsing_thread_url.is_alive() else 'Не работает'
         thread_mes_websocket = 'Работает' if tm.parsing_thread_websocket.is_alive() else 'Не работает'
         thread_proccesing = 'Работает' if tm.parsing_thread_processing_items.is_alive() else 'Не работает'
@@ -374,6 +383,17 @@ def run(bot: TeleBot, tm: TM_Parsing):
         thread_pool_message = 'Работает' if tm.bot.thread_pool.is_alive() else 'Не работает'
         filter_notification_mes = "\t\t".join(x + "₽ - " + str(config["filter"]["notification"][x]) + "%\n" for x in config["filter"]["notification"])
         filter_autobuy_mes = "\t\t".join(x + "₽ - " + str(config["filter"]["autobuy"][x]) + "%\n" for x in config["filter"]["autobuy"])
+        filter_keyword_mes = ('Список ключевых фильтров:\n'
+               '\tУведомления:\n')
+        for keyword in config['keyfilter']['notification']:
+            filter_keyword_mes += f'\t\t{keyword}:\n'
+            for price_filter in config['keyfilter']['notification'][keyword]:
+                filter_keyword_mes += f'\t\t\t{price_filter}₽ - {config["keyfilter"]["notification"][keyword][price_filter]}%\n'
+        filter_keyword_mes += '\n\tАвтопокупка:\n'
+        for keyword in config['keyfilter']['autobuy']:
+            filter_keyword_mes += f'\t\t{keyword}:\n'
+            for price_filter in config['keyfilter']['autobuy'][keyword]:
+                filter_keyword_mes += f'\t\t\t{price_filter}₽ - {config["keyfilter"]["autobuy"][keyword][price_filter]}%\n'
         mes = (f'Потоки:\n'
                f'Поток ссылки: {thread_mes_url}\n'
                f'Поток вебсокет: {thread_mes_websocket}\n'
@@ -389,19 +409,20 @@ def run(bot: TeleBot, tm: TM_Parsing):
                f'\t\t{filter_notification_mes}\n'
                f'\tАвтопокупка:\n'
                f'\t\t{filter_autobuy_mes}\n'
+               f'{filter_keyword_mes}\n'
                f'Курсы:\n'
                f'1 key - {config["currency"]["keys"]} ₽\n'
-               f'1 metal - {config["currency"]["metal"]} ₽')
+               f'1 metal - {config["currency"]["metal"]} ₽\n'
+               f'TM API: {tm.TM_KEY}')
         buttons = [create_button('Перезагрузить потоки парсинга', settings_menu.new(type='reload', dump='parsing')),
                    create_button('Перезагрузить все потоки', settings_menu.new(type='reload', dump='threads')),
                    create_button('Изменить курс', settings_menu.new(type='edit_currency', dump='')),
+                   create_button('Изменить ключ TM', settings_menu.new(type='edit_api', dump='')),
                    create_button('Изменить черный список', settings_menu.new(type='edit_black', dump='')),
                    create_button('Изменить фильтр', settings_menu.new(type='edit_filter', dump='')),
                    create_button('Изменить ключевой фильтр', settings_menu.new(type='edit_keyfilter', dump='')),
-                   create_button('Выгрузить предметы из ЧС', settings_menu.new(type='dump', dump='blacklist_items')),
-                   create_button('Выгрузить базу данных', settings_menu.new(type='dump', dump='db')),
-                   create_button('Выгрузить кэш', settings_menu.new(type='dump', dump='cache')),
-                   create_button('Выгрузить ПНБ', settings_menu.new(type='dump', dump='iff')),
+                   create_button('Выгрузка файлов', settings_menu.new(type='dumps', dump='')),
+                   create_button('Выгрузка логов предметов', settings_menu.new(type='log_item', dump='')),
                    create_button('Очистить кэш', settings_menu.new(type='clear_cache', dump='')),
                    create_button('Вернуться в меню', menu_page.new(page='menu'))]
         markup = InlineKeyboardMarkup()
@@ -410,6 +431,21 @@ def run(bot: TeleBot, tm: TM_Parsing):
             bot.send_message(callback.message.chat.id, mes, reply_markup=markup)
         else:
             bot.edit_message_text(mes, callback.message.chat.id, callback.message.message_id, reply_markup=markup)
+
+    @bot.callback_query_handler(func= lambda x: settings_menu.filter(type='dumps').check(x))
+    @logger.catch()
+    def dumps(callback: CallbackQuery):
+        mes = 'Выберите:'
+        buttons = [
+            create_button('Выгрузить предметы из ЧС', settings_menu.new(type='dump', dump='blacklist_items')),
+            create_button('Выгрузить базу данных', settings_menu.new(type='dump', dump='db')),
+            create_button('Выгрузить кэш', settings_menu.new(type='dump', dump='cache')),
+            create_button('Выгрузить ПНБ', settings_menu.new(type='dump', dump='iff')),
+            create_button('Вернуться в меню', menu_page.new(page='settings'))
+        ]
+        markup = InlineKeyboardMarkup()
+        markup.add(*buttons, row_width=1)
+        bot.edit_message_text(mes, callback.message.chat.id, callback.message.message_id, reply_markup=markup)
 
     @bot.callback_query_handler(func=lambda x: settings_menu.filter(type='dump').check(x))
     @logger.catch()
@@ -692,7 +728,7 @@ def run(bot: TeleBot, tm: TM_Parsing):
                 mes += f'\t\t{keyword}:\n'
                 for price_filter in config['keyfilter']['notification'][keyword]:
                     mes += f'\t\t\t{price_filter}₽ - {config["keyfilter"]["notification"][keyword][price_filter]}%\n'
-            mes += '\t\nАвтопокупка:\n'
+            mes += '\n\tАвтопокупка:\n'
             for keyword in config['keyfilter']['autobuy']:
                 mes += f'\t\t{keyword}:\n'
                 for price_filter in config['keyfilter']['autobuy'][keyword]:
@@ -795,3 +831,57 @@ def run(bot: TeleBot, tm: TM_Parsing):
                 bot.send_message(message.chat.id, 'Неправильный формат!')
                 bot.send_message(message.chat.id, 'Пришлите процент от 1 до 100 (0 для отмены):')
                 bot.register_next_step_handler(callback.message, edit_keywords_mes, type, price, callback, keyword_filter)
+
+    @bot.callback_query_handler(func=lambda x: settings_menu.filter(type='log_item').check(x))
+    @logger.catch()
+    def log_item(callback: CallbackQuery):
+        bot.answer_callback_query(callback.id)
+        data = settings_menu.parse(callback.data)
+        if data['dump'] == 'yes':
+            bot.send_message(callback.message.chat.id, 'Пришлите айди предмета формата 111-111 (0 для отмены):')
+        else:
+            bot.edit_message_text('Пришлите айди предмета формата 111-111 (0 для отмены):', callback.message.chat.id, callback.message.message_id)
+        bot.register_next_step_handler(callback.message, send_log_item, callback)
+
+    @logger.catch()
+    def send_log_item(message: Message, callback):
+        item_id = message.text
+        markup = InlineKeyboardMarkup()
+        if item_id == '0':
+            menu_settings(callback, True)
+        elif item_id.count('-') != 1:
+            markup.add(create_button('Вернуться в меню', menu_page.new(page='settings')))
+            bot.send_message(message.chat.id, 'Неправильный формат!', reply_markup=markup)
+        else:
+            if os.path.isfile(f'./logs/items/{item_id}.log'):
+                markup.add(create_button('Повторить', settings_menu.new(type='log_item', dump='yes')))
+                markup.add(create_button('Вернуться в меню', menu_page.new(page='settings')))
+                file = open(f'./logs/items/{item_id}.log')
+                bot.send_document(message.chat.id, file, reply_markup=markup)
+            else:
+                markup.add(create_button('Повторить', settings_menu.new(type='log_item', dump='')))
+                markup.add(create_button('Вернуться в меню', menu_page.new(page='settings')))
+                bot.send_message(message.chat.id, f'Лог файла не существует для предмета {item_id}', reply_markup=markup)
+
+    @bot.callback_query_handler(func=lambda x: settings_menu.filter(type='edit_api').check(x))
+    @logger.catch()
+    def mes_edit_api(callback: CallbackQuery):
+        bot.edit_message_text('Пришлите API ключ от TM:', callback.message.chat.id, callback.message.message_id)
+        bot.register_next_step_handler(callback.message, edit_api)
+
+    @logger.catch()
+    def edit_api(message: Message):
+        api = message.text
+        old_api = tm.TM_KEY
+        try:
+            config['api_key'] = api
+            with open('./data/config.json', 'w', encoding='utf-8') as file:
+                json.dump(config, file, ensure_ascii=False, indent=4)
+            tm.TM_KEY = api
+            tm.get_steam64()
+            tm.get_balance()
+            bot.send_message(message.chat.id, f'ТМ ключ успешно изменен на: {api}')
+        except:
+            config['api_key'] = old_api
+            tm.TM_KEY = old_api
+            bot.send_message(message.chat.id, f'Ошибка при смене ключа! Ключ на данный момент: {old_api}')

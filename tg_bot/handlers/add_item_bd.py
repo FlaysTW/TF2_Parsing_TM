@@ -273,6 +273,7 @@ def run(bot: TeleBot, tm):
                         count_dels += 1
                         tm.count_items_cache -= 1
                         antiflood(bot.edit_message_text, **{'text': 'УДАЛЕН ИЗ КЭША!\n' + message['text'], 'chat_id': message['chat']['id'], 'message_id': message['message_id']})
+                        logger.info(f'ADD ITEM {add_item[0]["name"]} in items BD {id_cache} delete in cache', id=id_cache)
 
                 bot.edit_message_text(callback.message.text, callback.message.chat.id, callback.message.message_id)
                 bot.send_message(callback.message.chat.id, f'Успешно добавлено!\nИз кэша удалено {count_dels} предметов')

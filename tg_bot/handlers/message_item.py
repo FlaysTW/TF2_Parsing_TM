@@ -9,12 +9,21 @@ from tg_bot.utils import cancel
 future_add = [0]
 
 def run(bot: TeleBot, tm: TM_Parsing):
+    @bot.callback_query_handler(func= lambda x: item_message.filter(type='buy').check(x))
+    @logger.catch()
+    def buy_item(callback: CallbackQuery):
+        bot.answer_callback_query(callback.id)
+        data = item_message.parse(callback.data)
+        classid = data['classid']
+        instanceid = data['instanceid']
+        price = data['price']
+        tm.buy_item(classid, instanceid, price)
+
     @bot.callback_query_handler(func= lambda x: item_message.filter(type='del').check(x))
     @logger.catch()
     def delete_item_in_cache(callback: CallbackQuery):
         bot.answer_callback_query(callback.id)
         data = item_message.parse(callback.data)
-        print(data)
         try:
             name = items_cache.pop(f'{data["classid"]}-{data["instanceid"]}')
             mes = callback.message

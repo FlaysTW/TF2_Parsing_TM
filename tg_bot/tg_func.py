@@ -35,6 +35,7 @@ class Telegram_functions():
                         data_items = kwargs.pop('write_cache')
                         mes = antiflood(self.bot.send_message, **kwargs, number_retries=20)
                         items_cache[f"{data_items['classid']}-{data_items['instanceid']}"]['message'] = mes.json
+                        logger.info(f'SEND MESSAGE {data_items["classid"]}-{data_items["instanceid"]} add message to cache message id {mes.message_id}', id=f'{data_items["classid"]}-{data_items["instanceid"]}')
                     else:
                         antiflood(self.bot.send_message, **kwargs, number_retries=20)
                     self.count_message_not -= 1
