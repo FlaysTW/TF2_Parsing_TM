@@ -3,7 +3,7 @@ import threading
 import time
 import requests
 from tg_bot.tg_func import Telegram_functions
-from utils.loging import logger, create_logger_item, delete_logger_item
+from utils.loging import logger, create_logger_item, delete_logger_item, check_logs
 from websockets.sync import client as ws
 import json
 import queue
@@ -42,7 +42,7 @@ class TM_Parsing():
     status_save_cache = True
 
     count_items_cache = len(list(items_cache))
-
+    status_items = {}
     datetime.datetime.now().strftime("%H:%M:%S %d/%m")
 
     last_item_url = {'name': None, 'id': '0-0', 'date': datetime.datetime.now()}
@@ -129,6 +129,7 @@ class TM_Parsing():
                             logger.info(f'PROCCESING ITEM {classid}-{instanceid} add blacklist', id=f'{classid}-{instanceid}')
                             self.blacklist_items.append(f'{datetime.datetime.now()}, {name}, {classid}, {instanceid}, https://tf2.tm/en/item/{classid}-{instanceid}')
                             #print(self.blacklist_items)
+                            self.status_items.pop(f"{classid}-{instanceid}")
                             delete_logger_item(f'{classid}-{instanceid}')
                             continue
 
@@ -340,6 +341,7 @@ class TM_Parsing():
                 self.bot.send_item(message, classid, instanceid, price_item_raw, markup_undefiend=True, message_thread_id=message_thread_id)
         else:
             logger.error(f'PROCCESING ITEM {classid}-{instanceid} get info item ERROR', id=f'{classid}-{instanceid}')
+        self.status_items.pop(f"{classid}-{instanceid}")
         delete_logger_item(f'{classid}-{instanceid}')
 
     @logger.catch()
@@ -463,6 +465,8 @@ class TM_Parsing():
                                 classid = item[0]
                                 instanceid = item[1]
                                 craft = 'Craftable' if item[8] == "1" else 'Non-Craftable'
+                                if f'{classid}-{instanceid}' not in self.status_items:
+                                    self.status_items[f'{classid}-{instanceid}'] = False
                                 create_logger_item(f'{classid}-{instanceid}')
                                 price = float(item[2]) / 100
                                 name = item[13]
@@ -538,10 +542,10 @@ class TM_Parsing():
                                     self.count_items_cache += 1
                                     self.last_item_url = {'name': name, 'id': f"{classid}-{instanceid}",'date': datetime.datetime.now()}
                                     self.items_queue.put({'name': name, 'classid': classid, 'instanceid': instanceid, 'priority': priority})
-                                    delete_logger_item(f'{classid}-{instanceid}')
                                 else:
                                     logger.warning(f'URL PARSING {classid}-{instanceid} not go next step Flag: {flag} Flag AB: {flag_autobuy} Priority: {priority}', id=f'{classid}-{instanceid}')
-                                    delete_logger_item(f'{classid}-{instanceid}')
+                                    if not self.status_items[f"{classid}-{instanceid}"]:
+                                        delete_logger_item(f'{classid}-{instanceid}')
                         else:
                             logger.error(f'URL PARSING ERROR status code {r.status_code}')
                 else:
@@ -566,6 +570,8 @@ class TM_Parsing():
                         name = res['i_market_hash_name']
                         classid = res['i_classid']
                         instanceid = res['i_instanceid']
+                        if f'{classid}-{instanceid}' not in self.status_items:
+                            self.status_items[f'{classid}-{instanceid}'] = False
                         create_logger_item(f'{classid}-{instanceid}')
                         price = res['ui_price']
                         logger.success(f'WEBSOKCET NEW ITEM {classid}-{instanceid} {name}', id=f'{classid}-{instanceid}')
@@ -634,13 +640,15 @@ class TM_Parsing():
                         if flag or flag_autobuy:
                             logger.success(f'WEBSOCKET {classid}-{instanceid} next step proccesing items Priority: {priority}', id=f'{classid}-{instanceid}')
                             items_cache[f"{classid}-{instanceid}"] = {'name': name}
+                            self.status_items[f"{classid}-{instanceid}"] = True
                             self.count_items_websocket += 1
                             self.count_items_cache += 1
                             self.last_item_websocket = {'name': name, 'id': f"{classid}-{instanceid}", 'date': datetime.datetime.now()}
                             self.items_queue.put({'name': name, 'classid': classid, 'instanceid': instanceid, 'priority': priority})
                         else:
                             logger.warning(f'WEBSOCKET {classid}-{instanceid} not go next step Flag: {flag} Flag AB: {flag_autobuy} Priority: {priority}', id=f'{classid}-{instanceid}')
-                            delete_logger_item(f'{classid}-{instanceid}')
+                            if not self.status_items[f"{classid}-{instanceid}"]:
+                                delete_logger_item(f'{classid}-{instanceid}')
 
             except Exception as ex:
                 logger.exception(f'WEBSOCKET {ex}')
