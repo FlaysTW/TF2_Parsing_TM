@@ -3,7 +3,7 @@ import threading
 import time
 import requests
 from tg_bot.tg_func import Telegram_functions
-from utils.loging import logger, create_logger_item, delete_logger_item, check_logs
+from utils.loging import logger, create_logger_item, delete_logger_item
 from websockets.sync import client as ws
 import json
 import queue
