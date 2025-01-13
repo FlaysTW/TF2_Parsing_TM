@@ -122,7 +122,6 @@ class TM_Parsing():
                     name = raw['name']
                     classid = raw['classid']
                     instanceid = raw['instanceid']
-                    create_logger_item(f'{classid}-{instanceid}')
                     priority = raw['priority']
                     logger.info(f'PROCCESING ITEM new {classid}-{instanceid}', id=f'{classid}-{instanceid}')
                     if not any(i in name for i in ['Casemaker']):
@@ -163,7 +162,6 @@ class TM_Parsing():
         r = requests.get(f'https://tf2.tm/api/ItemInfo/{classid}_{instanceid}/en/?key={self.TM_KEY}', timeout=20)
         #print(classid, instanceid)
         #print(r.json())
-        create_logger_item(f'{classid}-{instanceid}')
         logger.info(f'PROCCESING ITEM {classid}-{instanceid} getting item info', id=f'{classid}-{instanceid}')
         if r.status_code == 200:
             logger.success(f'PROCCESING ITEM {classid}-{instanceid} get item info', id=f'{classid}-{instanceid}')
@@ -342,6 +340,7 @@ class TM_Parsing():
                 self.bot.send_item(message, classid, instanceid, price_item_raw, markup_undefiend=True, message_thread_id=message_thread_id)
         else:
             logger.error(f'PROCCESING ITEM {classid}-{instanceid} get info item ERROR', id=f'{classid}-{instanceid}')
+        delete_logger_item(f'{classid}-{instanceid}')
 
     @logger.catch()
     def save_cache(self):
