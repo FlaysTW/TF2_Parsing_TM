@@ -11,7 +11,6 @@ logger_list = {}
 
 def create_logger_item(id):
     def check(x):
-
         if 'id' in x['extra']:
             if id == x['extra']['id']:
                 return True
@@ -28,6 +27,9 @@ def delete_logger_item(id):
     logger_id = logger_list.pop(id)
     logger.remove(logger_id)
 
+def check_logs():
+    print(len(logger_list))
+
 logger.remove()
-logger.add(sink=sys.stdout, filter=check_not_items)
+logger.add(sink=sys.stdout)
 logger.add(sink='./logs/log.log', rotation='1 day', filter=check_not_items)
