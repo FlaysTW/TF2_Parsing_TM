@@ -130,7 +130,7 @@ class TM_Parsing():
                             self.blacklist_items.append(f'{datetime.datetime.now()}, {name}, {classid}, {instanceid}, https://tf2.tm/en/item/{classid}-{instanceid}')
                             #print(self.blacklist_items)
                             self.status_items.pop(f"{classid}-{instanceid}")
-                            delete_logger_item(f'{classid}-{instanceid}')
+                            #delete_logger_item(f'{classid}-{instanceid}')
                             continue
 
                     for repl in ['Series ']:
@@ -170,8 +170,16 @@ class TM_Parsing():
             item = ""
             full_description = ''
             mes_description = ''
-            price_item_raw = float(resp['min_price'])
-            price_item = int(resp['min_price']) / 100
+            try:
+                price_item_raw = float(resp['min_price'])
+                price_item = int(resp['min_price']) / 100
+            except:
+                logger.warning(f"PROCCESING ITEM {classid}-{instanceid} Fail get info item", id=f'{classid}-{instanceid}')
+                items_cache.pop(f"{classid}-{instanceid}")
+                self.status_items.pop(f"{classid}-{instanceid}")
+                #delete_logger_item(f'{classid}-{instanceid}')
+                return
+
             effect = ''
             non_craftable = ''
             quality = False
@@ -294,15 +302,15 @@ class TM_Parsing():
 
                 logger.info(f'PROCCESING ITEM {classid}-{instanceid} find notification filter price: {filter_price_log} Procent filter: {config["filter"]["notification"][filter_price_log]} New price: {finily_price} BD price: {price_db} Price item: {price_item}', id=f'{classid}-{instanceid}')
 
-                if finily_price or spell or priority:
-                    if price_item_raw == -1 and not spell:
+                if finily_price or spell or priority or effect:
+                    if price_item_raw == -1 and (not spell or not effect):
                         finily_price = -10000
                         if price_db >= 500:
                             logger.info(f'PROCCESING ITEM {classid}-{instanceid} get priority Price db: {price_db}', id=f'{classid}-{instanceid}')
                             priority = True
                         logger.info(f'PROCCESING ITEM {classid}-{instanceid} change price check for -1', id=f'{classid}-{instanceid}')
 
-                    if price_item <= finily_price or spell or priority:
+                    if price_item <= finily_price or spell or priority or effect:
                         logger.success(f'PROCCESING ITEM {classid}-{instanceid} send message in telegram in chanel id: {message_thread_id}', id=f'{classid}-{instanceid}')
                         message = f'{name}{effect}\n{non_craftable}\n{mes_description}'
 
@@ -342,7 +350,8 @@ class TM_Parsing():
         else:
             logger.error(f'PROCCESING ITEM {classid}-{instanceid} get info item ERROR', id=f'{classid}-{instanceid}')
         self.status_items.pop(f"{classid}-{instanceid}")
-        delete_logger_item(f'{classid}-{instanceid}')
+        #delete_logger_item(f'{classid}-{instanceid}')
+        pass
 
     @logger.catch()
     def save_cache(self):
@@ -467,7 +476,7 @@ class TM_Parsing():
                                 craft = 'Craftable' if item[8] == "1" else 'Non-Craftable'
                                 if f'{classid}-{instanceid}' not in self.status_items:
                                     self.status_items[f'{classid}-{instanceid}'] = False
-                                create_logger_item(f'{classid}-{instanceid}')
+                                #create_logger_item(f'{classid}-{instanceid}')
                                 price = float(item[2]) / 100
                                 name = item[13]
                                 logger.success(f'URL PARSING NEW ITEM {classid}-{instanceid} {name}', id=f'{classid}-{instanceid}')
@@ -545,7 +554,8 @@ class TM_Parsing():
                                 else:
                                     logger.warning(f'URL PARSING {classid}-{instanceid} not go next step Flag: {flag} Flag AB: {flag_autobuy} Priority: {priority}', id=f'{classid}-{instanceid}')
                                     if not self.status_items[f"{classid}-{instanceid}"]:
-                                        delete_logger_item(f'{classid}-{instanceid}')
+                                        pass
+                                        #delete_logger_item(f'{classid}-{instanceid}')
                         else:
                             logger.error(f'URL PARSING ERROR status code {r.status_code}')
                 else:
@@ -572,7 +582,7 @@ class TM_Parsing():
                         instanceid = res['i_instanceid']
                         if f'{classid}-{instanceid}' not in self.status_items:
                             self.status_items[f'{classid}-{instanceid}'] = False
-                        create_logger_item(f'{classid}-{instanceid}')
+                        #create_logger_item(f'{classid}-{instanceid}')
                         price = res['ui_price']
                         logger.success(f'WEBSOKCET NEW ITEM {classid}-{instanceid} {name}', id=f'{classid}-{instanceid}')
 
@@ -648,7 +658,8 @@ class TM_Parsing():
                         else:
                             logger.warning(f'WEBSOCKET {classid}-{instanceid} not go next step Flag: {flag} Flag AB: {flag_autobuy} Priority: {priority}', id=f'{classid}-{instanceid}')
                             if not self.status_items[f"{classid}-{instanceid}"]:
-                                delete_logger_item(f'{classid}-{instanceid}')
+                                pass
+                                #delete_logger_item(f'{classid}-{instanceid}')
 
             except Exception as ex:
                 logger.exception(f'WEBSOCKET {ex}')
