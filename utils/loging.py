@@ -31,5 +31,5 @@ def check_logs():
     print(len(logger_list))
 
 logger.remove()
-logger.add(sink=sys.stdout)
+logger.add(sink=sys.stdout, filter=check_not_items)
 logger.add(sink='./logs/log.log', rotation='1 day', filter=check_not_items)
