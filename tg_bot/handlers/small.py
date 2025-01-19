@@ -8,6 +8,7 @@ from telebot.util import antiflood
 from utils import loading_data
 from utils.loading_data import items_cache, future, items_bd_list, items_bd
 from utils.config import config
+from utils.loging import create_logger_item, get_logs
 def run(bot: TeleBot, tm: TM_Parsing):
     @bot.message_handler(commands=['stop'])
     def stop(message: Message):
@@ -117,6 +118,9 @@ def run(bot: TeleBot, tm: TM_Parsing):
         url = item['url']
         ids = url.split('/')[-1]
         classid, instanceid =  ids.split('-')
+        if f'{classid}-{instanceid}' not in tm.status_items:
+            tm.status_items[f'{classid}-{instanceid}'] = False
+        #create_logger_item(f'{classid}-{instanceid}')
         price = float(item['price'])
         name = item['name']
 
@@ -183,4 +187,38 @@ def run(bot: TeleBot, tm: TM_Parsing):
         bot.send_message(message.chat.id, f'Chat id: {message.chat.id}\nThread id: {message.message_thread_id}',
                          message_thread_id=message.message_thread_id)
 
+    @bot.message_handler(commands=['saves'])
+    def command_saves(message: Message):
+        with open('test1.json', 'w', encoding='utf-8') as file:
+            json.dump(get_logs(), file, indent=4, ensure_ascii=False)
+        with open('test2.json', 'w', encoding='utf-8') as file:
+            json.dump(tm.status_items, file, indent=4, ensure_ascii=False)
 
+        with open('test1.json', 'r', encoding='utf-8') as file:
+            bot.send_document(message.chat.id, file)
+        with open('test2.json', 'r', encoding='utf-8') as file:
+            bot.send_document(message.chat.id, file)
+            
+    @bot.message_handler(commands=['check'])
+    def check(message: Message):
+        len1 = len(items_cache)
+        with open('./items/cache.json', 'r', encoding='utf-8') as file:
+            cache_t = json.load(file)
+        len2 = len(cache_t)
+        mes1 = f'Item Cache: {len1} {len2}'
+
+        len1 = len(future['notification'])
+        with open('./items/cache.json', 'r', encoding='utf-8') as file:
+            future_t = json.load(file)
+        len2 = len(future_t['notification'])
+
+        mes2 = f'Notification: {len1} {len2}'
+
+        len1 = len(future['autobuy'])
+        len2 = len(future_t['autobuy'])
+
+        mes3 = f'Autobuy: {len1} {len2}'
+
+        mes = f'{mes1}\n{mes2}\n{mes3}'
+
+        bot.send_message(message.chat.id, mes)
