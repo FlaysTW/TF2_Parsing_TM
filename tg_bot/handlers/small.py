@@ -208,7 +208,7 @@ def run(bot: TeleBot, tm: TM_Parsing):
         mes1 = f'Item Cache: {len1} {len2}'
 
         len1 = len(future['notification'])
-        with open('./items/cache.json', 'r', encoding='utf-8') as file:
+        with open('./items/future.json', 'r', encoding='utf-8') as file:
             future_t = json.load(file)
         len2 = len(future_t['notification'])
 
