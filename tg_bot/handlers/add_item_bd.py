@@ -11,7 +11,12 @@ from telebot.util import antiflood
 add_item = [0]
 
 def run(bot: TeleBot, tm):
-    
+
+    @bot.message_handler(commands=['fixadd'])
+    def lll(message: Message):
+        add_item[0] = 0
+        bot.send_message(message.chat.id, text='good')
+
     @bot.callback_query_handler(func=lambda x: item_message.filter(type='add_bd').check(x))
     @logger.catch()
     def add_item_in_db(callback: CallbackQuery):
