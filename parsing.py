@@ -71,7 +71,7 @@ class TM_Parsing():
             name = items_cache[f"{classid}-{instanceid}"]["name"]
         mes = (f'Покупка предмета!\n'
                f'Название предмета: {name}\n'
-               f'Айди предмета: {classid}-{instanceid}'
+               f'Айди предмета: {classid}-{instanceid}\n'
                f'Цена на ТМ: {price}\n'
                f'{description}')
         self.bot.send_item(mes, classid, instanceid, price, 2)
@@ -152,7 +152,7 @@ class TM_Parsing():
                     #print(name, self.items_queue.qsize(), threading.active_count())
                 except Exception as ex:
                     logger.exception(ex)
-            time.sleep(0.1) #TODO: ИЗМЕНИТЬ на 0.0001
+            time.sleep(0.00001) #TODO: ИЗМЕНИТЬ на 0.0001
         logger.debug('Stop processing thread')
         logger.debug('Create new thread processing')
         self.create_thread_processing()
@@ -284,7 +284,7 @@ class TM_Parsing():
                     logger.info('Попытка купить предмет!')
                     description = (f'Цена в базе: {price_db}\n'
                                    f'Фильтр: {filter_price_log}\n'
-                                   f'Процент: {config["filter"]["autobuy"][filter_price_log]} %'
+                                   f'Процент: {config["filter"]["autobuy"][filter_price_log]} %\n'
                                    f'Цена в базе с фильтром: {autobuy_price}\n')
                     self.buy_item(classid, instanceid, price_item, description)
 
