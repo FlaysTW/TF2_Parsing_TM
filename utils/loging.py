@@ -30,6 +30,9 @@ def delete_logger_item(id):
 def check_logs():
     print(len(logger_list))
 
+def get_logs():
+    return logger_list
+
 logger.remove()
 logger.add(sink=sys.stdout, filter=check_not_items)
 logger.add(sink='./logs/log.log', rotation='1 day', filter=check_not_items)

@@ -130,7 +130,7 @@ class TM_Parsing():
                             self.blacklist_items.append(f'{datetime.datetime.now()}, {name}, {classid}, {instanceid}, https://tf2.tm/en/item/{classid}-{instanceid}')
                             #print(self.blacklist_items)
                             self.status_items.pop(f"{classid}-{instanceid}")
-                            #delete_logger_item(f'{classid}-{instanceid}')
+                            delete_logger_item(f'{classid}-{instanceid}')
                             continue
 
                     for repl in ['Series ']:
@@ -177,7 +177,7 @@ class TM_Parsing():
                 logger.warning(f"PROCCESING ITEM {classid}-{instanceid} Fail get info item", id=f'{classid}-{instanceid}')
                 items_cache.pop(f"{classid}-{instanceid}")
                 self.status_items.pop(f"{classid}-{instanceid}")
-                #delete_logger_item(f'{classid}-{instanceid}')
+                delete_logger_item(f'{classid}-{instanceid}')
                 return
 
             effect = ''
@@ -350,8 +350,8 @@ class TM_Parsing():
         else:
             logger.error(f'PROCCESING ITEM {classid}-{instanceid} get info item ERROR', id=f'{classid}-{instanceid}')
         self.status_items.pop(f"{classid}-{instanceid}")
-        #delete_logger_item(f'{classid}-{instanceid}')
-        pass
+        delete_logger_item(f'{classid}-{instanceid}')
+
 
     @logger.catch()
     def save_cache(self):
@@ -476,7 +476,7 @@ class TM_Parsing():
                                 craft = 'Craftable' if item[8] == "1" else 'Non-Craftable'
                                 if f'{classid}-{instanceid}' not in self.status_items:
                                     self.status_items[f'{classid}-{instanceid}'] = False
-                                #create_logger_item(f'{classid}-{instanceid}')
+                                create_logger_item(f'{classid}-{instanceid}')
                                 price = float(item[2]) / 100
                                 name = item[13]
                                 logger.success(f'URL PARSING NEW ITEM {classid}-{instanceid} {name}', id=f'{classid}-{instanceid}')
@@ -547,6 +547,7 @@ class TM_Parsing():
                                 if flag or flag_autobuy:
                                     logger.success(f'URL PARSING {classid}-{instanceid} next step proccesing items Priority: {priority}', id=f'{classid}-{instanceid}')
                                     items_cache[f"{classid}-{instanceid}"] = {'name': name}
+                                    self.status_items[f"{classid}-{instanceid}"] = True
                                     self.count_items_url += 1
                                     self.count_items_cache += 1
                                     self.last_item_url = {'name': name, 'id': f"{classid}-{instanceid}",'date': datetime.datetime.now()}
@@ -554,8 +555,8 @@ class TM_Parsing():
                                 else:
                                     logger.warning(f'URL PARSING {classid}-{instanceid} not go next step Flag: {flag} Flag AB: {flag_autobuy} Priority: {priority}', id=f'{classid}-{instanceid}')
                                     if not self.status_items[f"{classid}-{instanceid}"]:
-                                        pass
-                                        #delete_logger_item(f'{classid}-{instanceid}')
+                                        delete_logger_item(f'{classid}-{instanceid}')
+
                         else:
                             logger.error(f'URL PARSING ERROR status code {r.status_code}')
                 else:
@@ -582,7 +583,7 @@ class TM_Parsing():
                         instanceid = res['i_instanceid']
                         if f'{classid}-{instanceid}' not in self.status_items:
                             self.status_items[f'{classid}-{instanceid}'] = False
-                        #create_logger_item(f'{classid}-{instanceid}')
+                        create_logger_item(f'{classid}-{instanceid}')
                         price = res['ui_price']
                         logger.success(f'WEBSOKCET NEW ITEM {classid}-{instanceid} {name}', id=f'{classid}-{instanceid}')
 
@@ -658,8 +659,7 @@ class TM_Parsing():
                         else:
                             logger.warning(f'WEBSOCKET {classid}-{instanceid} not go next step Flag: {flag} Flag AB: {flag_autobuy} Priority: {priority}', id=f'{classid}-{instanceid}')
                             if not self.status_items[f"{classid}-{instanceid}"]:
-                                pass
-                                #delete_logger_item(f'{classid}-{instanceid}')
+                                delete_logger_item(f'{classid}-{instanceid}')
 
             except Exception as ex:
                 logger.exception(f'WEBSOCKET {ex}')
