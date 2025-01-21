@@ -177,6 +177,10 @@ class TM_Parsing():
                 logger.warning(f"PROCCESING ITEM {classid}-{instanceid} Fail get info item", id=f'{classid}-{instanceid}')
                 logger.exception(f'{ex}', id=f'{classid}-{instanceid}')
                 logger.exception(f'{ex}')
+                test = requests.get(f'https://tf2.tm/api/ItemInfo/{classid}_{instanceid}/ru/?key={self.TM_KEY}', timeout=20)
+                if test.status_code == 200:
+                    logger.info(test.text)
+
                 items_cache.pop(f"{classid}-{instanceid}")
                 self.status_items.pop(f"{classid}-{instanceid}")
                 delete_logger_item(f'{classid}-{instanceid}')
