@@ -173,8 +173,10 @@ class TM_Parsing():
             try:
                 price_item_raw = float(resp['min_price'])
                 price_item = int(resp['min_price']) / 100
-            except:
+            except Exception as ex:
                 logger.warning(f"PROCCESING ITEM {classid}-{instanceid} Fail get info item", id=f'{classid}-{instanceid}')
+                logger.exception(f'{ex}', id=f'{classid}-{instanceid}')
+                logger.exception(f'{ex}')
                 items_cache.pop(f"{classid}-{instanceid}")
                 self.status_items.pop(f"{classid}-{instanceid}")
                 delete_logger_item(f'{classid}-{instanceid}')
