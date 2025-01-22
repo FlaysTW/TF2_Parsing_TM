@@ -350,7 +350,7 @@ class TM_Parsing():
                 message = f'{name}{effect}\n{non_craftable}\n{mes_description}'
                 message += f'Цена на ТМ: {round(price_item / config["currency"]["keys"], 2)} keys, {price_item} ₽\n\n'
                 message += f'https://tf2.tm/ru/item/{classid}-{instanceid}'
-                #self.bot.send_item(message, classid, instanceid, price_item_raw, markup_undefiend=True, message_thread_id=message_thread_id)
+                self.bot.send_item(message, classid, instanceid, price_item_raw, markup_undefiend=True, message_thread_id=message_thread_id)
             else:
                 if effect:
                     message_thread_id = 6
