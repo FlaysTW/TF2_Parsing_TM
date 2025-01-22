@@ -3,7 +3,7 @@ import os
 from dotenv import load_dotenv
 import json
 
-load_dotenv()
+load_dotenv(override=True)
 
 bot = telebot.TeleBot(os.getenv('TG_TOKEN'))
 
