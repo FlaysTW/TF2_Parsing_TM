@@ -409,7 +409,7 @@ def run(bot: TeleBot, tm: TM_Parsing):
                f'\t\t{filter_notification_mes}\n'
                f'\tАвтопокупка:\n'
                f'\t\t{filter_autobuy_mes}\n'
-               f'{filter_keyword_mes}\n'
+               #f'{filter_keyword_mes}\n'
                f'Курсы:\n'
                f'1 key - {config["currency"]["keys"]} ₽\n'
                f'1 metal - {config["currency"]["metal"]} ₽\n'
@@ -420,7 +420,7 @@ def run(bot: TeleBot, tm: TM_Parsing):
                    create_button('Изменить ключ TM', settings_menu.new(type='edit_api', dump='')),
                    create_button('Изменить черный список', settings_menu.new(type='edit_black', dump='')),
                    create_button('Изменить фильтр', settings_menu.new(type='edit_filter', dump='')),
-                   create_button('Изменить ключевой фильтр', settings_menu.new(type='edit_keyfilter', dump='')),
+                   #create_button('Изменить ключевой фильтр', settings_menu.new(type='edit_keyfilter', dump='')),
                    create_button('Выгрузка файлов', settings_menu.new(type='dumps', dump='')),
                    create_button('Выгрузка логов предметов', settings_menu.new(type='log_item', dump='')),
                    create_button('Очистить кэш', settings_menu.new(type='clear_cache', dump='')),
@@ -432,6 +432,13 @@ def run(bot: TeleBot, tm: TM_Parsing):
         else:
             bot.edit_message_text(mes, callback.message.chat.id, callback.message.message_id, reply_markup=markup)
 
+
+    @bot.callback_query_handler(func=lambda x: menu_page.filter(page='settings_back').check(x))
+    @logger.catch()
+    def settings_back_callback(callback: CallbackQuery):
+        bot.answer_callback_query(callback.id)
+        menu_settings(callback, mess=True)
+
     @bot.callback_query_handler(func= lambda x: settings_menu.filter(type='dumps').check(x))
     @logger.catch()
     def dumps(callback: CallbackQuery):
@@ -441,6 +448,7 @@ def run(bot: TeleBot, tm: TM_Parsing):
             create_button('Выгрузить базу данных', settings_menu.new(type='dump', dump='db')),
             create_button('Выгрузить кэш', settings_menu.new(type='dump', dump='cache')),
             create_button('Выгрузить ПНБ', settings_menu.new(type='dump', dump='iff')),
+            create_button('Выгрузить все', settings_menu.new(type='dump', dump='all')),
             create_button('Вернуться в меню', menu_page.new(page='settings'))
         ]
         markup = InlineKeyboardMarkup()
@@ -468,6 +476,18 @@ def run(bot: TeleBot, tm: TM_Parsing):
             file = open('./items/cache.json')
         elif data['dump'] == 'iff':
             file = open('./items/future.json')
+        elif data['dump'] == 'all':
+            file = open('./items/items.json')
+            unusual = open('./items/unusual_items.json')
+            bot.send_document(callback.message.chat.id, file)
+            bot.send_document(callback.message.chat.id, unusual)
+            file = open('./items/cache.json')
+            bot.send_document(callback.message.chat.id, file)
+            file = open('./items/future.json')
+            bot.send_document(callback.message.chat.id, file)
+            bot.delete_message(callback.message.chat.id, callback.message.message_id)
+            bot.send_message(callback.message.chat.id, 'Готово!')
+            return 0
         if file:
             bot.send_document(callback.message.chat.id, file)
             bot.delete_message(callback.message.chat.id, callback.message.message_id)
@@ -855,7 +875,7 @@ def run(bot: TeleBot, tm: TM_Parsing):
         else:
             if os.path.isfile(f'./logs/items/{item_id}.log'):
                 markup.add(create_button('Повторить', settings_menu.new(type='log_item', dump='yes')))
-                markup.add(create_button('Вернуться в меню', menu_page.new(page='settings')))
+                markup.add(create_button('Вернуться в меню', menu_page.new(page='settings_back')))
                 file = open(f'./logs/items/{item_id}.log')
                 bot.send_document(message.chat.id, file, reply_markup=markup)
             else:
