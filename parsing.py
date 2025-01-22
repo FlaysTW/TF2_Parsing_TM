@@ -356,11 +356,11 @@ class TM_Parsing():
                     message_thread_id = 6
                 else:
                     message_thread_id = 3
-                    logger.success(f'PROCCESING ITEM {classid}-{instanceid} send message in telegram in chanel id: {message_thread_id}', id=f'{classid}-{instanceid}')
-                    message = f'{name}{effect}\n{non_craftable}\n{mes_description}'
-                    message += f'Цена на ТМ: {round(price_item / config["currency"]["keys"], 2)} keys, {price_item} ₽\n\n'
-                    message += f'https://tf2.tm/ru/item/{classid}-{instanceid}'
-                    self.bot.send_item(message, classid, instanceid, price_item_raw, markup_undefiend=True, message_thread_id=message_thread_id)
+                logger.success(f'PROCCESING ITEM {classid}-{instanceid} send message in telegram in chanel id: {message_thread_id}', id=f'{classid}-{instanceid}')
+                message = f'{name}{effect}\n{non_craftable}\n{mes_description}'
+                message += f'Цена на ТМ: {round(price_item / config["currency"]["keys"], 2)} keys, {price_item} ₽\n\n'
+                message += f'https://tf2.tm/ru/item/{classid}-{instanceid}'
+                self.bot.send_item(message, classid, instanceid, price_item_raw, markup_undefiend=True, message_thread_id=message_thread_id)
 
         else:
             logger.error(f'PROCCESING ITEM {classid}-{instanceid} get info item ERROR', id=f'{classid}-{instanceid}')
