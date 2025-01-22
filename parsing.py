@@ -7,7 +7,7 @@ from utils.loging import logger, create_logger_item, delete_logger_item
 from websockets.sync import client as ws
 import json
 import queue
-from utils.loading_data import items_bd, items_bd_list, items_bd_list_unusual, items_unusual_bd, items_cache, future
+from utils.loading_data import items_bd, items_bd_list, items_bd_list_unusual, items_unusual_bd, items_cache, future, translate_unusual_effect
 from utils.config import config
 import csv
 import copy
@@ -71,7 +71,7 @@ class TM_Parsing():
             name = items_cache[f"{classid}-{instanceid}"]["name"]
         mes = (f'Покупка предмета!\n'
                f'Название предмета: {name}\n'
-               f'Айди предмета: {classid}-{instanceid}\n'
+               f'Айди предмета: <a href="https://tf2.tm/ru/item/{classid}-{instanceid}">{classid}-{instanceid}</a>\n'
                f'Цена на ТМ: {price}\n'
                f'{description}')
         self.bot.send_item(mes, classid, instanceid, price, 2)
@@ -127,7 +127,7 @@ class TM_Parsing():
                     if not any(i in name for i in ['Casemaker']):
                         if any(i in name for i in config['blacklist']):  # TODO: Blacklist
                             logger.info(f'PROCCESING ITEM {classid}-{instanceid} add blacklist', id=f'{classid}-{instanceid}')
-                            self.blacklist_items.append(f'{datetime.datetime.now()}, {name}, {classid}, {instanceid}, https://tf2.tm/en/item/{classid}-{instanceid}')
+                            self.blacklist_items.append(f'{datetime.datetime.now()}, {name}, {classid}, {instanceid}, https://tf2.tm/ru/item/{classid}-{instanceid}')
                             #print(self.blacklist_items)
                             self.status_items.pop(f"{classid}-{instanceid}")
                             delete_logger_item(f'{classid}-{instanceid}')
@@ -160,7 +160,7 @@ class TM_Parsing():
 
     @logger.catch()
     def thread_processing_item(self,name, classid, instanceid, priority):
-        r = requests.get(f'https://tf2.tm/api/ItemInfo/{classid}_{instanceid}/en/?key={self.TM_KEY}', timeout=20)
+        r = requests.get(f'https://tf2.tm/api/ItemInfo/{classid}_{instanceid}/ru/?key={self.TM_KEY}', timeout=20)
         #print(classid, instanceid)
         #print(r.json())
         logger.info(f'PROCCESING ITEM {classid}-{instanceid} getting item info', id=f'{classid}-{instanceid}')
@@ -177,10 +177,6 @@ class TM_Parsing():
                 logger.warning(f"PROCCESING ITEM {classid}-{instanceid} Fail get info item", id=f'{classid}-{instanceid}')
                 logger.exception(f'{ex}', id=f'{classid}-{instanceid}')
                 logger.exception(f'{ex}')
-                test = requests.get(f'https://tf2.tm/api/ItemInfo/{classid}_{instanceid}/ru/?key={self.TM_KEY}', timeout=20)
-                if test.status_code == 200:
-                    logger.info(test.text)
-
                 items_cache.pop(f"{classid}-{instanceid}")
                 self.status_items.pop(f"{classid}-{instanceid}")
                 delete_logger_item(f'{classid}-{instanceid}')
@@ -196,26 +192,38 @@ class TM_Parsing():
                 for des in resp['description']:
                     des_text = des['value']
                     full_description += des_text + '\n'
-                    if 'Effect: ' in des_text:
-                        effect = des_text.split('Effect: ')[1].strip()
-                        continue
-                    elif ': ' in des_text and des_text[-1] == ')' and des_text[1] == '(':
-                        mes_description += des_text + '\n'
-                        continue
-                    elif 'Paint Color:' in des_text:
-                        mes_description += des_text + '\n'
-                        continue
-                    elif 'spell only' in des_text and des['color'] == '7ea9d1':
-                        mes_description += des_text + '\n'
-                        message_thread_id = 5
-                        spell = True
-                        continue
+                    if 'color' in des:
+                        if 'эффект: ' in des_text and des['color'] == 'ffd700':
+                            effect = des_text.split('эффект: ')[1].strip()
+                            continue
+                        elif ': ' in des_text and des_text[-1] == ')' and des_text[0] == '(' and des['color'] == '756b5e':
+                            mes_description += des_text + '\n'
+                            continue
+                        elif 'Цвет краски' in des_text and des['color'] == '756b5e':
+                            mes_description += des_text + '\n'
+                            continue
+                        elif 'заклятия работают' in des_text and des['color'] == '7ea9d1':
+                            mes_description += des_text + '\n'
+                            message_thread_id = 5
+                            spell = True
+                            continue
             logger.info(f'PROCCESING ITEM {classid}-{instanceid} full description: {full_description}', id=f'{classid}-{instanceid}')
             logger.info(f'PROCCESING ITEM {classid}-{instanceid} unusual effect: {effect}', id=f'{classid}-{instanceid}')
             logger.info(f'PROCCESING ITEM {classid}-{instanceid} spell: {spell}', id=f'{classid}-{instanceid}')
 
             if mes_description:
                 mes_description = 'Описание:\n' + mes_description + '\n\n'
+
+            if effect:
+                if effect in translate_unusual_effect['ru']:
+                    effect = translate_unusual_effect['ru'][effect]
+                else:
+                    mes = (f'Не найден название эффекта!\n'
+                           f'{name}\n'
+                           f'{effect}\n\n'
+                           f'https://tf2.tm/ru/item/{classid}-{instanceid}')
+                    self.bot.send_item(mes, 0, 0, 0, 50524)
+
 
             logger.info(f'PROCCESING ITEM {classid}-{instanceid} check item in bd', id=f'{classid}-{instanceid}')
             if name in items_bd_list or name in items_bd_list_unusual:
@@ -288,10 +296,7 @@ class TM_Parsing():
                 if flag_autobuy:
                     logger.info(f'PROCCESING ITEM {classid}-{instanceid} filter autobuy item Price TM: {price_item} Price DB: {price_db}', id=f'{classid}-{instanceid}')
                     logger.info('Попытка купить предмет!')
-                    description = (f'Цена в базе: {price_db}\n'
-                                   f'Фильтр: {filter_price_log}\n'
-                                   f'Процент: {config["filter"]["autobuy"][filter_price_log]} %\n'
-                                   f'Цена в базе с фильтром: {autobuy_price}\n')
+                    description = (f'Цена в базе: {price_db}')
                     self.buy_item(classid, instanceid, price_item, description)
 
                 filter_price_log = 0
@@ -326,7 +331,7 @@ class TM_Parsing():
                         else:
                             message += f'Цена в базе: {item["price"]} keys, {round(item["price"] * config["currency"]["keys"],2)} ₽\n'
 
-                        message += f'\nhttps://tf2.tm/en/item/{classid}-{instanceid}'
+                        message += f'\nhttps://tf2.tm/ru/item/{classid}-{instanceid}'
                         self.bot.send_item(message, classid, instanceid, price_item_raw, markup_flag=True, message_thread_id=message_thread_id)
                     else:
                         logger.info(f'PROCCESING ITEM {classid}-{instanceid} add to future notification Price: {finily_price * 100 - 1} Old price: {price_item_raw}', id=f'{classid}-{instanceid}')
@@ -337,7 +342,7 @@ class TM_Parsing():
                 logger.success(f'PROCCESING ITEM {classid}-{instanceid} send message in telegram in chanel id: {message_thread_id}', id=f'{classid}-{instanceid}')
                 message = f'{name}{effect}\n{non_craftable}\n{mes_description}'
                 message += f'Цена на ТМ: {round(price_item / config["currency"]["keys"], 2)} keys, {price_item} ₽\n\n'
-                message += f'https://tf2.tm/en/item/{classid}-{instanceid}'
+                message += f'https://tf2.tm/ru/item/{classid}-{instanceid}'
                 self.bot.send_item(message, classid, instanceid, price_item_raw, markup_undefiend=True, message_thread_id=message_thread_id)
             elif quality:
                 message_thread_id = 4
@@ -346,13 +351,18 @@ class TM_Parsing():
                 message += f'Цена на ТМ: {round(price_item / config["currency"]["keys"], 2)} keys, {price_item} ₽\n\n'
                 message += f'https://tf2.tm/en/item/{classid}-{instanceid}'
                 self.bot.send_item(message, classid, instanceid, price_item_raw, markup_undefiend=True, message_thread_id=message_thread_id)
+                message += f'https://tf2.tm/ru/item/{classid}-{instanceid}'
             else:
-                message_thread_id = 3
-                logger.success(f'PROCCESING ITEM {classid}-{instanceid} send message in telegram in chanel id: {message_thread_id}', id=f'{classid}-{instanceid}')
-                message = f'{name}{effect}\n{non_craftable}\n{mes_description}'
-                message += f'Цена на ТМ: {round(price_item / config["currency"]["keys"], 2)} keys, {price_item} ₽\n\n'
-                message += f'https://tf2.tm/en/item/{classid}-{instanceid}'
-                self.bot.send_item(message, classid, instanceid, price_item_raw, markup_undefiend=True, message_thread_id=message_thread_id)
+                if effect:
+                    message_thread_id = 6
+                else:
+                    message_thread_id = 3
+                    logger.success(f'PROCCESING ITEM {classid}-{instanceid} send message in telegram in chanel id: {message_thread_id}', id=f'{classid}-{instanceid}')
+                    message = f'{name}{effect}\n{non_craftable}\n{mes_description}'
+                    message += f'Цена на ТМ: {round(price_item / config["currency"]["keys"], 2)} keys, {price_item} ₽\n\n'
+                    message += f'https://tf2.tm/ru/item/{classid}-{instanceid}'
+                    self.bot.send_item(message, classid, instanceid, price_item_raw, markup_undefiend=True, message_thread_id=message_thread_id)
+
         else:
             logger.error(f'PROCCESING ITEM {classid}-{instanceid} get info item ERROR', id=f'{classid}-{instanceid}')
         self.status_items.pop(f"{classid}-{instanceid}")
@@ -514,10 +524,7 @@ class TM_Parsing():
                                                 if price <= finily_price:
                                                     logger.success(f'URL PARSING {classid}-{instanceid} filter autobuy item Price TM: {price} Price DB: {min_price}', id=f'{classid}-{instanceid}')
                                                     flag_autobuy = True
-                                                    description = (f'Цена в базе: {min_price}\n'
-                                                                   f'Фильтр: {filter_price_log}\n'
-                                                                   f'Процент: {config["filter"]["autobuy"][filter_price_log]} %\n'
-                                                                   f'Цена в базе с фильтром: {finily_price}\n')
+                                                    description = (f'Цена в базе: {min_price}')
                                                     self.buy_item(classid, instanceid, price, description, name)
                                             else:
                                                 logger.info(f'URL PARSING {classid}-{instanceid} {craft} not in item bd', id=f'{classid}-{instanceid}')
@@ -543,6 +550,8 @@ class TM_Parsing():
                                     description = (f'Покупка по ПНБ!\n'
                                                    f'Старая цена: {round(future["autobuy"][f"{classid}-{instanceid}"]["old_price"] / 100, 2)}')
                                     future['autobuy'].pop(f"{classid}-{instanceid}")
+                                    priority = True
+                                    flag = True
                                     self.buy_item(classid, instanceid, price, description, name)
                                 else:
                                     old_price = future['autobuy'][f"{classid}-{instanceid}"]['old_price']
@@ -620,10 +629,7 @@ class TM_Parsing():
                                     if price <= finily_price:
                                         logger.success(f'WEBSOCKET {classid}-{instanceid} filter autobuy item Price TM: {price} Price DB: {min_price}', id=f'{classid}-{instanceid}')
                                         flag_autobuy = True
-                                        description = (f'Цена в базе: {min_price}\n'
-                                                       f'Фильтр: {filter_price_log}\n'
-                                                       f'Процент: {config["filter"]["autobuy"][filter_price_log]} %\n'
-                                                       f'Цена в базе с фильтром: {finily_price}\n')
+                                        description = (f'Цена в базе: {min_price}')
                                         self.buy_item(classid, instanceid, price, description, name)
 
                                 else:
@@ -648,6 +654,8 @@ class TM_Parsing():
                             description = (f'Покупка по ПНБ!\n'
                                            f'Старая цена: {round(future["autobuy"][f"{classid}-{instanceid}"]["old_price"] / 100, 2)}')
                             future['autobuy'].pop(f"{classid}-{instanceid}")
+                            priority = True
+                            flag = True
                             self.buy_item(classid, instanceid, price, description, name)
                         else:
                             old_price = future['autobuy'][f"{classid}-{instanceid}"]['old_price']

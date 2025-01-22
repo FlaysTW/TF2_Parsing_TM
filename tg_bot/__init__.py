@@ -16,6 +16,8 @@ class Telegram_Bot():
                     if x == 'add_item_bd.py':
                         cog.run(bot_menu, tm, True)
                         cog.run(bot, tm)
+                    elif x == 'message_item.py':
+                        cog.run(bot, tm)
                     else:
                         cog.run(bot_menu, tm)
         except Exception as ex:

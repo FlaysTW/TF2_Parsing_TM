@@ -79,7 +79,7 @@ class Telegram_functions():
             markup.add(*buttons)
             self.messages_queue.put({'chat_id': self.chat_id, 'text': message, 'message_thread_id': message_thread_id, 'reply_markup': markup, 'write_cache': data_item})
         else:
-            self.messages_queue.put({'chat_id': self.chat_id, 'text': message, 'message_thread_id': message_thread_id})
+            self.messages_queue.put({'chat_id': self.chat_id, 'text': message, 'message_thread_id': message_thread_id, 'parse_mode': 'html'})
 
         self.count_message_not += 1
 

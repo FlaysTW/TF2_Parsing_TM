@@ -15,3 +15,6 @@ with open('./items/cache.json', 'r', encoding='utf-8') as file:
 
 with open('./items/future.json', 'r', encoding='utf-8') as file:
     future = json.load(file)
+
+with open('./data/translate_unusual_effect.json', 'r', encoding='utf-8') as file:
+    translate_unusual_effect = json.load(file)
