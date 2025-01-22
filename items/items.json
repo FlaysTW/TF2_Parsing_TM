@@ -32455,7 +32455,7 @@
     },
     "Strange Killstreak Market Gardener": {
         "Craftable": {
-            "price": 5.1,
+            "price": 1.5,
             "currency": "keys"
         }
     },
@@ -42113,8 +42113,8 @@
     },
     "Killstreak Festive Force-A-Nature": {
         "Craftable": {
-            "currency": "metal",
-            "price": 321.0
+            "currency": "keys",
+            "price": 1.5
         }
     },
     "Spirit of Halloween Scotsman's Skullcutter (Battle Scarred)": {
@@ -44706,6 +44706,48 @@
     "Strange Killstreak Festive Grenade Launcher": {
         "Craftable": {
             "currency": "keys",
+            "price": 8.0
+        }
+    },
+    "Professional Killstreak Festive Ubersaw": {
+        "Craftable": {
+            "currency": "keys",
+            "price": 3.0
+        }
+    },
+    "Hot Spaniel": {
+        "Craftable": {
+            "currency": "metal",
+            "price": 1.0
+        }
+    },
+    "Festivized Natascha": {
+        "Craftable": {
+            "currency": "metal",
+            "price": 1.0
+        }
+    },
+    "Killstreak Festive Crusader's Crossbow": {
+        "Craftable": {
+            "currency": "keys",
+            "price": 2.0
+        }
+    },
+    "Strange Festivized Medi Gun": {
+        "Craftable": {
+            "currency": "metal",
+            "price": 35.0
+        }
+    },
+    "Killstreak Festive Shotgun": {
+        "Craftable": {
+            "currency": "metal",
+            "price": 25.0
+        }
+    },
+    "Festivized Scattergun": {
+        "Craftable": {
+            "currency": "metal",
             "price": 8.0
         }
     }
