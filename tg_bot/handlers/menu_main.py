@@ -15,7 +15,7 @@ from tg_bot.utils import create_button, cancel
 from utils.loading_data import items_bd_list, items_bd_list_unusual, items_cache, future
 from telebot.util import antiflood
 
-def run(bot: TeleBot, tm: TM_Parsing):
+def run(bot: TeleBot, tm: TM_Parsing, bot_parsing: TeleBot):
     # Кнопка меню
     @bot.message_handler(commands=['menu'])
     @logger.catch()
@@ -34,7 +34,9 @@ def run(bot: TeleBot, tm: TM_Parsing):
                f'Последний предмет по вебсокету:\n'
                f'{tm.last_item_websocket["name"]} {tm.last_item_websocket["id"]}\n'
                f'Время {tm.last_item_websocket["date"].strftime("%d/%m %H:%M:%S")}\n\n'
-               f'Предметов в кэше: {tm.count_items_cache}\n\n'
+               f'Предметов в кэше: {len(items_cache)}\n'
+               f'Предметов в ПНБ: {len(future["notification"]) + len(future["autobuy"])}'
+               f'\n\n'
                f'Курсы:\n'
                f'1 key - {config["currency"]["keys"]} ₽\n'
                f'1 metal - {config["currency"]["metal"]} ₽')
@@ -42,7 +44,7 @@ def run(bot: TeleBot, tm: TM_Parsing):
         buttons = [create_button('Проверить предмет', menu_page.new('check_id')),  # 0
                    create_button('Открыть базу', menu_page.new('base')),  # 1
                    create_button('Удалить предмет', menu_page.new('delete_item')),  # 2
-                   create_button('Меню автобая', autobuy_list.new(data='')),  # 3
+                   create_button('Меню автобая', autobuy_list.new(data='menu')),  # 3
                    create_button('Очистить кэш', menu_page.new('clear_cache')),  # 4
                    create_button('Настройки', menu_page.new('settings')),  # 5
                    create_button('Список ПНБ', menu_page.new('iff'))]  # 6
@@ -55,25 +57,6 @@ def run(bot: TeleBot, tm: TM_Parsing):
         else:
             bot.send_message(message.chat.id, mes, reply_markup=markup, parse_mode='HTML')
 
-    @bot.callback_query_handler(func= lambda x: autobuy_list.filter().check(x))
-    @logger.catch()
-    def autobuy_menu(callback: CallbackQuery):
-        bot.answer_callback_query(callback.id)
-
-        data = autobuy_list.parse(callback.data)
-        if data['data']:
-            setattr(tm, data['data'], not getattr(tm, data['data']))
-
-        mes = (f'Статусы автопокупки:\n\n'
-               f'Spells - {str(tm.autobuy_spell).replace("False", "Отключено").replace("True", "Включено")}\n'
-               f'Unusual - {str(tm.autobuy_unusual).replace("False", "Отключено").replace("True", "Включено")}\n'
-               f'All items - {str(tm.autobuy_all_items).replace("False", "Отключено").replace("True", "Включено")}')
-        markup = InlineKeyboardMarkup()
-        markup.add(create_button(f'Spells - {str(tm.autobuy_spell).replace("False", "❌").replace("True", "✅")}', autobuy_list.new(data='autobuy_spell')))
-        markup.add(create_button(f'Unusual - {str(tm.autobuy_unusual).replace("False", "❌").replace("True", "✅")}', autobuy_list.new(data='autobuy_unusual')))
-        markup.add(create_button(f'All items - {str(tm.autobuy_all_items).replace("False", "❌").replace("True", "✅")}', autobuy_list.new(data='autobuy_all_items')))
-        markup.add(create_button('Вернуться в меню', menu_page.new(page='menu')))
-        bot.edit_message_text(mes, callback.message.chat.id, callback.message.message_id, reply_markup=markup)
 
     @bot.callback_query_handler(func= lambda x: menu_page.filter(page='iff').check(x))
     @logger.catch()
@@ -332,13 +315,29 @@ def run(bot: TeleBot, tm: TM_Parsing):
         text = message.text.strip()
         try:
             if len(text.split('-')) == 2:
+                name = ''
+                mes_text = ''
                 if text in items_cache:
-                    bot.send_message(message.chat.id, f'Предмет {text} найден!\nНазвание предмета: {items_cache[text]["name"]}')
-                else:
+                    mes_text += f'Предмет {text} найден в кэше!\n'
+                    if not name:
+                        name = items_cache[text]["name"]
+                if text in future['notification']:
+                    mes_text += f'Предмет {text} найден в ПНБ уведомления!\n'
+                    if not name:
+                        name = future["notification"][text]["name"]
+                if text in future['autobuy']:
+                    mes_text += f'Предмет {text} найден в ПНБ автопокупка!\n'
+                    if not name:
+                        name = future["autobuy"][text]["name"]
+                if not mes_text:
                     bot.send_message(message.chat.id, f'Предмет {text} не найден!')
+                else:
+                    mes = f'{mes_text}\nНазвание предмета: {name}'
+                    bot.send_message(message.chat.id,mes)
             else:
                 bot.send_message(message.chat.id, f'Неправильный формат!')
-        except:
+        except Exception as ex:
+            logger.exception(ex)
             bot.send_message(message.chat.id, f'Неправильный формат!')
 
     # Удалить предмет
@@ -646,7 +645,6 @@ def run(bot: TeleBot, tm: TM_Parsing):
             keys = items_cache.copy()
             for i in keys:
                 items_cache.pop(i)
-            tm.count_items_cache = 0
             bot.edit_message_text('Кэш успешно удален!', callback.message.chat.id, callback.message.message_id)
 
 
@@ -876,8 +874,8 @@ def run(bot: TeleBot, tm: TM_Parsing):
             if os.path.isfile(f'./logs/items/{item_id}.log'):
                 markup.add(create_button('Повторить', settings_menu.new(type='log_item', dump='yes')))
                 markup.add(create_button('Вернуться в меню', menu_page.new(page='settings_back')))
-                file = open(f'./logs/items/{item_id}.log')
-                bot.send_document(message.chat.id, file, reply_markup=markup)
+                with open(f'./logs/items/{item_id}.log', 'r') as file:
+                    bot.send_document(message.chat.id, file, reply_markup=markup)
             else:
                 markup.add(create_button('Повторить', settings_menu.new(type='log_item', dump='')))
                 markup.add(create_button('Вернуться в меню', menu_page.new(page='settings')))

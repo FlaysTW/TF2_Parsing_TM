@@ -277,7 +277,6 @@ def run(bot: TeleBot, tm, fixadd=False):
                     if items_cache[id_cache]['name'] == add_item[0]['name']:
                         message = items_cache.pop(id_cache)['message']
                         count_dels += 1
-                        tm.count_items_cache -= 1
                         antiflood(bot.edit_message_text, **{'text': 'УДАЛЕН ИЗ КЭША!\n' + message['text'], 'chat_id': message['chat']['id'], 'message_id': message['message_id']})
                         logger.info(f'ADD ITEM {add_item[0]["name"]} in items BD {id_cache} delete in cache', id=id_cache)
 

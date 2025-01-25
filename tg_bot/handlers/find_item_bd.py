@@ -1,7 +1,7 @@
 import telebot
 from telebot import TeleBot
 from telebot.types import Message, InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery
-from tg_bot.callbacks_data import menu_page, list_menu, base_item
+from tg_bot.callbacks_data import menu_page, list_menu, base_item, item_message
 from utils.loging import logger
 from utils.loading_data import items_bd, items_bd_list, items_bd_list_unusual, items_unusual_bd
 from tg_bot.utils import create_button, cancel
@@ -21,7 +21,7 @@ def get_search_items(text):
                 result.append(item)
     return result
 
-def run(bot: TeleBot, tm):
+def run(bot: TeleBot, tm, bot_parsing: TeleBot):
     # Регистратор название предмета для поиска
     @bot.callback_query_handler(func=lambda x: menu_page.filter(page='find_item').check(x))
     @logger.catch()
@@ -84,6 +84,21 @@ def run(bot: TeleBot, tm):
     def menu_base_search_item_page(callback: CallbackQuery):
         bot.answer_callback_query(callback.id)
         menu_base_search_item(callback.message, callback, int(list_menu.parse(callback.data)['page']))
+
+    @bot_parsing.callback_query_handler(func= lambda x: item_message.filter(type='find_bd').check(x))
+    def message_item_callback(callback: CallbackQuery):
+        data = item_message.parse(callback.data)
+        text_message = callback.message.text
+        name = text_message.split('\n')[0].split('Effect')[0].strip()
+        unusual_flag=''
+        if 'unusual' == name.lower()[:7]:
+            unusual_flag = 'True'
+        find_item = lambda x: items_bd_list_unusual.index(x) if unusual_flag else items_bd_list.index(x)
+        callback.id = -1
+        callback.data = base_item.new(item=f'{find_item(name)}', unusual=unusual_flag, craft='', select='', status='', type='choice_item')
+        mes = bot.send_message(callback.message.chat.id, 'пум...')
+        callback.message = mes
+        base_menu_select_item(callback)
 
     # Вывод предмета
     @bot.callback_query_handler(func=lambda x: base_item.filter(type='choice_item').check(x))
@@ -151,10 +166,15 @@ def run(bot: TeleBot, tm):
                     for mark1 in markup.keyboard:
                         for mark2 in mark1:
                             mark2: InlineKeyboardButton = mark2
-                            time_data = base_item.parse(mark2.callback_data)
-                            time_data['select'] = message_id
-                            time_data.pop('@')
-                            mark2.callback_data = base_item.new(**time_data)
+                            if mark2.callback_data[:2] == 'bi':
+                                time_data = base_item.parse(mark2.callback_data)
+                                time_data['select'] = message_id
+                                time_data.pop('@')
+                                mark2.callback_data = base_item.new(**time_data)
+                            else:
+                                time_data = menu_page.parse(mark2.callback_data)
+                                time_data.pop('@')
+                                mark2.callback_data = menu_page.new(**time_data)
 
     # Каллбак регистратор
     @bot.callback_query_handler(func=lambda x: base_item.filter().check(x))
@@ -162,7 +182,6 @@ def run(bot: TeleBot, tm):
     def base_menu_edit_item(callback: CallbackQuery):
         data = base_item.parse(callback.data)
         item_name = items_bd_list_unusual[int(data['item'])] if data['unusual'] else items_bd_list[int(data['item'])]
-        print(data)
 
         if data['type'] == 'add_type':
             if data['status'] == 'add_craft':

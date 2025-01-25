@@ -16,6 +16,9 @@
         "Crate",
         "Cooler"
     ],
+    "autobuy_blacklist": [
+        "fiercesome fluorescence"
+    ],
     "filter": {
         "autobuy": {
             "30": 95,

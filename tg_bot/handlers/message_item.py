@@ -5,10 +5,13 @@ from tg_bot.callbacks_data import item_message
 from parsing import TM_Parsing
 from utils.loading_data import items_bd_list, items_bd_list_unusual, items_cache, future
 from tg_bot.utils import cancel
+from utils.config import config
+import json
+from telebot.util import antiflood
 
 future_add = [0]
 
-def run(bot: TeleBot, tm: TM_Parsing):
+def run(bot: TeleBot, tm: TM_Parsing, bot_menu: TeleBot):
     @bot.callback_query_handler(func= lambda x: item_message.filter(type='buy').check(x))
     @logger.catch()
     def buy_item(callback: CallbackQuery):
@@ -35,10 +38,18 @@ def run(bot: TeleBot, tm: TM_Parsing):
 
     @bot.callback_query_handler(func=lambda x: item_message.filter(type='pnb').check(x))
     @logger.catch()
+    def bot_accept_future(callback: CallbackQuery):
+        bot.answer_callback_query(callback.id)
+        future_add[0] = {'notification': {}, 'autobuy': {}}
+        callback.id = -1
+        items_for_future(callback)
+
+    @bot_menu.callback_query_handler(func=lambda x: item_message.filter(type='pnb').check(x))
+    @logger.catch()
     def items_for_future(callback: CallbackQuery):
         if callback.id != -1:
             future_add[0] = {'notification':{}, 'autobuy':{}}
-            bot.answer_callback_query(callback.id)
+            bot_menu.answer_callback_query(callback.id)
         data = item_message.parse(callback.data)
         data.pop('@')
         markup = InlineKeyboardMarkup()
@@ -62,14 +73,14 @@ def run(bot: TeleBot, tm: TM_Parsing):
         if flag:
             data['type'] = 'ready'
             markup.add(InlineKeyboardButton('Сохранить', callback_data=item_message.new(**data)))
-        bot.send_message(callback.message.chat.id, mes, parse_mode='HTML', reply_markup=markup)
+        bot_menu.send_message(callback.message.chat.id, mes, parse_mode='HTML', reply_markup=markup)
         # bot.send_message(callback.message.chat.id, 'Пришлите на сколько % должна понизится цена от 1 до 100 (0 для отмены):')
         # bot.register_next_step_handler(callback.message, items_for_future_message, data["classid"], data["instanceid"], data['price'], typ)
 
-    @bot.callback_query_handler(func=lambda x: item_message.filter(type='not').check(x) or item_message.filter(type='buyo').check(x) or item_message.filter(type='ready').check(x))
+    @bot_menu.callback_query_handler(func=lambda x: item_message.filter(type='not').check(x) or item_message.filter(type='buyo').check(x) or item_message.filter(type='ready').check(x))
     @logger.catch()
     def items_for_future_callback(callback: CallbackQuery):
-        bot.answer_callback_query(callback.id)
+        bot_menu.answer_callback_query(callback.id)
         data = item_message.parse(callback.data)
         if data['type'] == 'ready':
             if f'{data["classid"]}-{data["instanceid"]}' in future_add[0]['notification']:
@@ -79,8 +90,8 @@ def run(bot: TeleBot, tm: TM_Parsing):
             future_add[0] = 0
             item = items_cache.pop(f'{data["classid"]}-{data["instanceid"]}')
             bot.edit_message_text('УДАЛЕН ИЗ КЭША!\n' + item['message']['text'], item['message']['chat']['id'], item['message']['message_id'])
-            bot.edit_message_text(callback.message.text, callback.message.chat.id, callback.message.message_id)
-            bot.send_message(callback.message.chat.id, 'Готово')
+            bot_menu.edit_message_text(callback.message.text, callback.message.chat.id, callback.message.message_id)
+            bot_menu.send_message(callback.message.chat.id, 'Готово')
         else:
             mes = ''
             if data['type'] == 'not':
@@ -90,8 +101,8 @@ def run(bot: TeleBot, tm: TM_Parsing):
                 typ = 'autobuy'
                 mes += 'Настройка ПНБ автопокупка\n'
             mes += 'Пришлите на сколько % должна понизится цена от 1 до 100 (0 для отмены):'
-            bot.send_message(callback.message.chat.id, mes)
-            bot.register_next_step_handler(callback.message, items_for_future_message, callback, data['classid'], data['instanceid'], data['price'], typ)
+            bot_menu.send_message(callback.message.chat.id, mes)
+            bot_menu.register_next_step_handler(callback.message, items_for_future_message, callback, data['classid'], data['instanceid'], data['price'], typ)
 
     @logger.catch()
     def items_for_future_message(message: Message, callback: CallbackQuery, classid, instanceid, price, typ):
@@ -107,10 +118,25 @@ def run(bot: TeleBot, tm: TM_Parsing):
                 callback.id = -1
                 items_for_future(callback)
             except:
-                bot.send_message(message.chat.id, 'Неправильный формат!')
-                bot.send_message(message.chat.id, 'Пришлите на сколько % должна понизится цена от 1 до 100 (0 для отмены):')
-                bot.register_next_step_handler(message, items_for_future_message, classid, instanceid, typ)
+                bot_menu.send_message(message.chat.id, 'Неправильный формат!')
+                bot_menu.send_message(message.chat.id, 'Пришлите на сколько % должна понизится цена от 1 до 100 (0 для отмены):')
+                bot_menu.register_next_step_handler(message, items_for_future_message, classid, instanceid, typ)
 
+
+    @bot.callback_query_handler(func=lambda x: item_message.filter(type='add_BL_AB').check(x))
+    @logger.catch()
+    def add_blacklist_autobuy(callback: CallbackQuery):
+        bot.answer_callback_query(callback.id)
+        mes_text = callback.message.text
+        raw_name = mes_text.split('\n')[1].split('предмета: ')[1].strip()
+        name = raw_name.lower()
+        if name not in config['autobuy_blacklist']:
+            config['autobuy_blacklist'].append(name)
+            with open('./data/config.json', 'w', encoding='utf-8') as file:
+                json.dump(config, file, ensure_ascii=False, indent=4)
+            bot_menu.send_message(callback.message.chat.id, f'"{raw_name}" добавлен в чс для автопокупки!')
+        else:
+            bot_menu.send_message(callback.message.chat.id, f'"{raw_name}" уже находится в чс для автопокупки!')
 
     @bot.callback_query_handler(func=lambda x: item_message.filter().check(x))
     @logger.catch()

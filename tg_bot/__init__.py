@@ -17,9 +17,9 @@ class Telegram_Bot():
                         cog.run(bot_menu, tm, True)
                         cog.run(bot, tm)
                     elif x == 'message_item.py':
-                        cog.run(bot, tm)
+                        cog.run(bot, tm, bot_menu)
                     else:
-                        cog.run(bot_menu, tm)
+                        cog.run(bot_menu, tm, bot)
         except Exception as ex:
             logger.exception(ex)
         logger.debug('Start handlers telegram bot')

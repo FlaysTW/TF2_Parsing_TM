@@ -61,14 +61,16 @@ class Telegram_functions():
         logger.debug('Thread pool messages created successful')
 
     @logger.catch()
-    def send_item(self, message, classid, instanceid, price, message_thread_id, markup_flag=False, markup_undefiend=False):
+    def send_item(self, message, classid, instanceid, price, message_thread_id, markup_flag=False, markup_undefiend=False, markup_autobuy=False):
         if markup_flag:
             data_item = {'classid': classid, 'instanceid': instanceid, 'price': price}
             markup = InlineKeyboardMarkup()
             buttons = [InlineKeyboardButton(text='Купить', callback_data=item_message.new(**data_item, type='buy')),
                        InlineKeyboardButton(text='Удалить из кэша', callback_data=item_message.new(**data_item, type='del')),
-                       InlineKeyboardButton(text='Добавить предмет в ПНБ', callback_data=item_message.new(**data_item, type='pnb'))]
+                       InlineKeyboardButton(text='Добавить предмет в ПНБ', callback_data=item_message.new(**data_item, type='pnb')),
+                       InlineKeyboardButton(text='Найти в базе', callback_data=item_message.new(**data_item, type='find_bd'))]
             markup.add(buttons[0], buttons[1])
+            markup.add(buttons[3])
             markup.add(buttons[2])
             self.messages_queue.put({'chat_id': self.chat_id, 'text': message, 'message_thread_id': message_thread_id, 'reply_markup': markup, 'write_cache': data_item})
         elif markup_undefiend:
@@ -78,6 +80,11 @@ class Telegram_functions():
                        InlineKeyboardButton(text='Добавить в базу данных', callback_data=item_message.new(**data_item, type='add_bd'))]
             markup.add(*buttons)
             self.messages_queue.put({'chat_id': self.chat_id, 'text': message, 'message_thread_id': message_thread_id, 'reply_markup': markup, 'write_cache': data_item})
+        elif markup_autobuy:
+            data_item = {'classid': classid, 'instanceid': instanceid, 'price': price}
+            markup = InlineKeyboardMarkup()
+            markup.add(InlineKeyboardButton(text='Добавить в ЧС для автопокупки', callback_data=item_message.new(**data_item, type='add_BL_AB')))
+            self.messages_queue.put({'chat_id': self.chat_id, 'text': message, 'message_thread_id': message_thread_id, 'parse_mode': 'html','reply_markup': markup})
         else:
             self.messages_queue.put({'chat_id': self.chat_id, 'text': message, 'message_thread_id': message_thread_id, 'parse_mode': 'html'})
 

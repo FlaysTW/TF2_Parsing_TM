@@ -1,5 +1,6 @@
 import json
 import time
+import os
 from telebot.util import extract_arguments
 from telebot import TeleBot
 from telebot.types import Message
@@ -9,7 +10,7 @@ from utils import loading_data
 from utils.loading_data import items_cache, future, items_bd_list, items_bd
 from utils.config import config
 from utils.loging import create_logger_item, get_logs
-def run(bot: TeleBot, tm: TM_Parsing):
+def run(bot: TeleBot, tm: TM_Parsing, bot_parsing: TeleBot):
     @bot.message_handler(commands=['stop'])
     def stop(message: Message):
         args = extract_arguments(message.text)
@@ -222,3 +223,15 @@ def run(bot: TeleBot, tm: TM_Parsing):
         mes = f'{mes1}\n{mes2}\n{mes3}'
 
         bot.send_message(message.chat.id, mes)
+
+    @bot.message_handler(commands=['log'])
+    def log(message: Message):
+        args = extract_arguments(message.text)
+        if args.count('-') != 1:
+            bot.send_message(message.chat.id, 'Неправильный формат!')
+        else:
+            if os.path.isfile(f'./logs/items/{args}.log'):
+                with open(f'./logs/items/{args}.log', 'r') as file:
+                    bot.send_document(message.chat.id, file)
+            else:
+                bot.send_message(message.chat.id, f'Лог файла не существует для предмета {args}')
