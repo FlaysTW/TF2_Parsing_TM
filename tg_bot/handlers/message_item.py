@@ -32,9 +32,9 @@ def run(bot: TeleBot, tm: TM_Parsing, bot_menu: TeleBot):
             mes = callback.message
             mes.text = 'УДАЛЕН ИЗ КЭША!\n' + mes.text
             bot.edit_message_text(mes.text, mes.chat.id, mes.message_id)
-            bot.send_message(callback.message.chat.id, f"Предмет <a href='https://t.me/c/{str(callback.message.chat.id)[4:]}/{callback.message.message_thread_id}/{callback.message.message_id}'>{name['name']}</a> успешно удален из кэша!", parse_mode='HTML')
+            bot_menu.send_message(callback.message.chat.id, f"Предмет <a href='https://t.me/c/{str(callback.message.chat.id)[4:]}/{callback.message.message_thread_id}/{callback.message.message_id}'>{name['name']}</a> успешно удален из кэша!", parse_mode='HTML')
         except:
-            bot.send_message(callback.message.chat.id, f"<a href='https://t.me/c/{str(callback.message.chat.id)[4:]}/{callback.message.message_thread_id}/{callback.message.message_id}'>Предмет</a> уже удален из кэша!", parse_mode='HTML')
+            bot_menu.send_message(callback.message.chat.id, f"<a href='https://t.me/c/{str(callback.message.chat.id)[4:]}/{callback.message.message_thread_id}/{callback.message.message_id}'>Предмет</a> уже удален из кэша!", parse_mode='HTML')
 
     @bot.callback_query_handler(func=lambda x: item_message.filter(type='pnb').check(x))
     @logger.catch()

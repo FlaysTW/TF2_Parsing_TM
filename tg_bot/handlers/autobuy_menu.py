@@ -10,7 +10,7 @@ import json
 
 def run(bot: TeleBot, tm: TM_Parsing, bot_parsing: TeleBot):
 
-    @bot.callback_query_handler(func=lambda x: autobuy_list.filter(data='autobuy_spell').check(x) or autobuy_list.filter(data='autobuy_unusual').check(x) or autobuy_list.filter(data='autobuy_all_items').check(x) or autobuy_list.filter(data='menu').check(x))
+    @bot.callback_query_handler(func=lambda x: autobuy_list.filter(data='autobuy_spell').check(x) or autobuy_list.filter(data='autobuy_unusual').check(x) or autobuy_list.filter(data='autobuy_1_all_items').check(x) or autobuy_list.filter(data='autobuy_2_all_items').check(x) or autobuy_list.filter(data='menu').check(x))
     @logger.catch()
     def autobuy_menu(callback: CallbackQuery):
         bot.answer_callback_query(callback.id)
@@ -22,14 +22,17 @@ def run(bot: TeleBot, tm: TM_Parsing, bot_parsing: TeleBot):
         mes = (f'Статусы автопокупки:\n\n'
                f'Spells - {str(tm.autobuy_spell).replace("False", "Отключено").replace("True", "Включено")}\n'
                f'Unusual - {str(tm.autobuy_unusual).replace("False", "Отключено").replace("True", "Включено")}\n'
-               f'All items - {str(tm.autobuy_all_items).replace("False", "Отключено").replace("True", "Включено")}')
+               f'All items 1 step - {str(tm.autobuy_1_all_items).replace("False", "Отключено").replace("True", "Включено")}\n'
+               f'All items 2 step - {str(tm.autobuy_2_all_items).replace("False", "Отключено").replace("True", "Включено")}')
         markup = InlineKeyboardMarkup()
         markup.add(create_button(f'Spells - {str(tm.autobuy_spell).replace("False", "❌").replace("True", "✅")}',
                                  autobuy_list.new(data='autobuy_spell')))
         markup.add(create_button(f'Unusual - {str(tm.autobuy_unusual).replace("False", "❌").replace("True", "✅")}',
                                  autobuy_list.new(data='autobuy_unusual')))
-        markup.add(create_button(f'All items - {str(tm.autobuy_all_items).replace("False", "❌").replace("True", "✅")}',
-                                 autobuy_list.new(data='autobuy_all_items')))
+        markup.add(create_button(f'All items 1 step - {str(tm.autobuy_1_all_items).replace("False", "❌").replace("True", "✅")}',
+                          autobuy_list.new(data='autobuy_1_all_items')))
+        markup.add(create_button(f'All items 2 step - {str(tm.autobuy_2_all_items).replace("False", "❌").replace("True", "✅")}',
+                                 autobuy_list.new(data='autobuy_2_all_items')))
         markup.add(create_button('⠀', 'huyhuy'))
         markup.add(create_button('Изменить черный список', autobuy_list.new(data='edit_blacklist')))
         markup.add(create_button('Вернуться в меню', menu_page.new(page='menu')))
@@ -77,6 +80,8 @@ def run(bot: TeleBot, tm: TM_Parsing, bot_parsing: TeleBot):
         elif type_data == 'autobuy_del':
             if text in config['autobuy_blacklist']:
                 config['autobuy_blacklist'].pop(config['autobuy_blacklist'].index(text))
+                with open('./data/config.json', 'w', encoding='utf-8') as file:
+                    json.dump(config, file, ensure_ascii=False, indent=4)
                 callback.id = -1
                 edit_callback_menu(callback)
             else:

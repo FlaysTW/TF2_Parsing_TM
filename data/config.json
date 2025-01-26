@@ -5,8 +5,6 @@
     },
     "api_key": "nmAfyo6i4k3H2BnbI54VE9Zl9ekKS1w",
     "blacklist": [
-        "kit",
-        "Kit",
         "Tour of Duty Ticket",
         "Mann Co. Supply Crate Key",
         "Refined Metal",
@@ -14,11 +12,11 @@
         "Create",
         "Mann Co. Supply Munition",
         "Crate",
-        "Cooler"
+        "Cooler",
+        "Taunt"
     ],
-    "autobuy_blacklist": [
-        "fiercesome fluorescence"
-    ],
+    "autobuy_blacklist": [],
+    "killstreaker_whitelist": ["Торнадо", "Огненные рога"],
     "filter": {
         "autobuy": {
             "30": 95,

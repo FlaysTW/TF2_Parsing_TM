@@ -51,7 +51,10 @@ class TM_Parsing():
 
     autobuy_spell = False
     autobuy_unusual = False
-    autobuy_all_items = False
+    autobuy_1_all_items = False
+    autobuy_2_all_items = False
+
+    websocket_test = queue.Queue()
 
     def __init__(self):
         logger.debug('Starting parsing')
@@ -126,7 +129,7 @@ class TM_Parsing():
                     instanceid = raw['instanceid']
                     priority = raw['priority']
                     logger.info(f'PROCCESING ITEM new {classid}-{instanceid}', id=f'{classid}-{instanceid}')
-                    if not any(i in name for i in ['Casemaker']):
+                    if not any(i in name for i in ['Casemaker', 'Unusual', '']):
                         if any(i in name for i in config['blacklist']):  # TODO: Blacklist
                             logger.info(f'PROCCESING ITEM {classid}-{instanceid} add blacklist', id=f'{classid}-{instanceid}')
                             self.blacklist_items.append(f'{datetime.datetime.now()}, {name}, {classid}, {instanceid}, https://tf2.tm/en/item/{classid}-{instanceid}')
@@ -189,6 +192,7 @@ class TM_Parsing():
             quality = False
             message_thread_id = 7
             spell = False
+            killstreak = False
             logger.info(f'PROCCESING ITEM {classid}-{instanceid} check description', id=f'{classid}-{instanceid}')
             if resp['description']:
                 for des in resp['description']:
@@ -209,9 +213,18 @@ class TM_Parsing():
                             message_thread_id = 5
                             spell = True
                             continue
+                        elif 'Серийный убийца' in des_text:
+                            if any(kill.lower() in des_text.lower() for kill in config['killstreaker_whitelist']):
+                                killstreak = True
+                                mes_description += des_text + '\n'
+                                if not spell:
+                                    message_thread_id = 51331
+                                continue
+
             logger.info(f'PROCCESING ITEM {classid}-{instanceid} full description: {full_description}', id=f'{classid}-{instanceid}')
             logger.info(f'PROCCESING ITEM {classid}-{instanceid} unusual effect: {effect}', id=f'{classid}-{instanceid}')
             logger.info(f'PROCCESING ITEM {classid}-{instanceid} spell: {spell}', id=f'{classid}-{instanceid}')
+            logger.info(f'PROCCESING ITEM {classid}-{instanceid} killstreak: {killstreak}', id=f'{classid}-{instanceid}')
 
             if mes_description:
                 mes_description = 'Описание:\n' + mes_description + '\n\n'
@@ -280,34 +293,36 @@ class TM_Parsing():
                 flag_autobuy = False
                 autobuy_price = 0
                 filter_price_log = 0
-                for filter_price in config['filter']['autobuy']:
-                    if autobuy_price:
-                        break
-                    if filter_price == list(config['filter']['autobuy'])[-1]:
-                        filter_price_log = filter_price
-                        autobuy_price = price_db * ((100 - config['filter']['autobuy'][filter_price]) / 100)
-                    elif price_db <= float(filter_price):
-                        filter_price_log = filter_price
-                        autobuy_price = price_db * ((100 - config['filter']['autobuy'][filter_price]) / 100)
-                logger.info(f'PROCCESING ITEM {classid}-{instanceid} find autobuy filter price: {filter_price_log} Procent filter: {config["filter"]["autobuy"][filter_price_log]} New price: {autobuy_price} BD price: {price_db} Price item: {price_item}', id=f'{classid}-{instanceid}')
+                if self.autobuy_2_all_items:
+                    for filter_price in config['filter']['autobuy']:
+                        if autobuy_price:
+                            break
+                        if filter_price == list(config['filter']['autobuy'])[-1]:
+                            filter_price_log = filter_price
+                            autobuy_price = price_db * ((100 - config['filter']['autobuy'][filter_price]) / 100)
+                        elif price_db <= float(filter_price):
+                            filter_price_log = filter_price
+                            autobuy_price = price_db * ((100 - config['filter']['autobuy'][filter_price]) / 100)
+                    logger.info(f'PROCCESING ITEM {classid}-{instanceid} find autobuy filter price: {filter_price_log} Procent filter: {config["filter"]["autobuy"][filter_price_log]} New price: {autobuy_price} BD price: {price_db} Price item: {price_item}', id=f'{classid}-{instanceid}')
 
-                if price_item <= autobuy_price and price_item_raw >= 0:
-                    flag_autobuy = True
-                    print('Покупаем предмет по фильтру', price_item, autobuy_price)
+                    if price_item <= autobuy_price and price_item_raw >= 0:
+                        flag_autobuy = True
+                        print('Покупаем предмет по фильтру', price_item, autobuy_price)
 
-                if flag_autobuy:
-                    logger.info(f'PROCCESING ITEM {classid}-{instanceid} filter autobuy item Price TM: {price_item} Price DB: {price_db}', id=f'{classid}-{instanceid}')
-                    logger.info('Попытка купить предмет!')
-                    description = (f'Цена в базе: {price_db}')
-                    logger.info(f'PROCCESING ITEM {classid}-{instanceid} check item in autobuy blacklist', id=f'{classid}-{instanceid}')
-                    for black in config['autobuy_blacklist']:
-                        if black in name.lower():
-                            flag_autobuy = False
                     if flag_autobuy:
-                        self.buy_item(classid, instanceid, price_item, description, name, autobuy=True)
-                    else:
-                        logger.warning(f'PROCCESING ITEM {classid}-{instanceid} don"t autobuy, item in blacklist. Blacklist: {black}', id=f'{classid}-{instanceid}')
-
+                        logger.info(f'PROCCESING ITEM {classid}-{instanceid} filter autobuy item Price TM: {price_item} Price DB: {price_db}', id=f'{classid}-{instanceid}')
+                        logger.info('Попытка купить предмет!')
+                        description = (f'Цена в базе: {price_db}')
+                        logger.info(f'PROCCESING ITEM {classid}-{instanceid} check item in autobuy blacklist', id=f'{classid}-{instanceid}')
+                        for black in config['autobuy_blacklist']:
+                            if black in name.lower():
+                                flag_autobuy = False
+                        if flag_autobuy:
+                            self.buy_item(classid, instanceid, price_item, description, name, autobuy=True)
+                        else:
+                            logger.warning(f'PROCCESING ITEM {classid}-{instanceid} don"t autobuy, item in blacklist. Blacklist: {black}', id=f'{classid}-{instanceid}')
+                else:
+                    logger.warning(f'PROCCESING ITEM {classid}-{instanceid} autobuy 2 step disable')
                 filter_price_log = 0
                 finily_price = 0
                 for filter_price in config['filter']['notification']:
@@ -323,14 +338,14 @@ class TM_Parsing():
                 logger.info(f'PROCCESING ITEM {classid}-{instanceid} find notification filter price: {filter_price_log} Procent filter: {config["filter"]["notification"][filter_price_log]} New price: {finily_price} BD price: {price_db} Price item: {price_item}', id=f'{classid}-{instanceid}')
 
                 if finily_price or spell or priority or effect:
-                    if price_item_raw == -1 and (not spell or not effect):
+                    if price_item_raw == -1 and (not spell or not effect or killstreak):
                         finily_price = -10000
                         if price_db >= 500:
                             logger.info(f'PROCCESING ITEM {classid}-{instanceid} get priority Price db: {price_db}', id=f'{classid}-{instanceid}')
                             priority = True
                         logger.info(f'PROCCESING ITEM {classid}-{instanceid} change price check for -1', id=f'{classid}-{instanceid}')
 
-                    if price_item <= finily_price or spell or priority or effect:
+                    if price_item <= finily_price or spell or priority or effect or killstreak:
                         logger.success(f'PROCCESING ITEM {classid}-{instanceid} send message in telegram in chanel id: {message_thread_id}', id=f'{classid}-{instanceid}')
                         message = f'{name}{effect}\n{non_craftable}\n{mes_description}'
 
@@ -353,6 +368,20 @@ class TM_Parsing():
                 message += f'Цена на ТМ: {round(price_item / config["currency"]["keys"], 2)} keys, {price_item} ₽\n\n'
                 message += f'https://tf2.tm/en/item/{classid}-{instanceid}'
                 self.bot.send_item(message, classid, instanceid, price_item_raw, markup_undefiend=True, message_thread_id=message_thread_id)
+            elif effect:
+                message_thread_id = 6
+                logger.success(f'PROCCESING ITEM {classid}-{instanceid} send message in telegram in chanel id: {message_thread_id}', id=f'{classid}-{instanceid}')
+                message = f'{name}{effect}\n{non_craftable}\n{mes_description}'
+                message += f'Цена на ТМ: {round(price_item / config["currency"]["keys"], 2)} keys, {price_item} ₽\n\n'
+                message += f'https://tf2.tm/en/item/{classid}-{instanceid}'
+                self.bot.send_item(message, classid, instanceid, price_item_raw, markup_undefiend=True, message_thread_id=message_thread_id)
+            elif killstreak:
+                message_thread_id = 51331
+                logger.success(f'PROCCESING ITEM {classid}-{instanceid} send message in telegram in chanel id: {message_thread_id}', id=f'{classid}-{instanceid}')
+                message = f'{name}{effect}\n{non_craftable}\n{mes_description}'
+                message += f'Цена на ТМ: {round(price_item / config["currency"]["keys"], 2)} keys, {price_item} ₽\n\n'
+                message += f'https://tf2.tm/en/item/{classid}-{instanceid}'
+                self.bot.send_item(message, classid, instanceid, price_item_raw, markup_undefiend=True, message_thread_id=message_thread_id)
             elif quality:
                 message_thread_id = 4
                 logger.success(f'PROCCESING ITEM {classid}-{instanceid} send message in telegram in chanel id: {message_thread_id}', id=f'{classid}-{instanceid}')
@@ -361,10 +390,7 @@ class TM_Parsing():
                 message += f'https://tf2.tm/en/item/{classid}-{instanceid}'
                 self.bot.send_item(message, classid, instanceid, price_item_raw, markup_undefiend=True, message_thread_id=message_thread_id)
             else:
-                if effect:
-                    message_thread_id = 6
-                else:
-                    message_thread_id = 3
+                message_thread_id = 3
                 logger.success(f'PROCCESING ITEM {classid}-{instanceid} send message in telegram in chanel id: {message_thread_id}', id=f'{classid}-{instanceid}')
                 message = f'{name}{effect}\n{non_craftable}\n{mes_description}'
                 message += f'Цена на ТМ: {round(price_item / config["currency"]["keys"], 2)} keys, {price_item} ₽\n\n'
@@ -514,36 +540,39 @@ class TM_Parsing():
                                         logger.info(f'URL PARSING {classid}-{instanceid} not in cache', id=f'{classid}-{instanceid}')
                                         if name in items_bd_list:
                                             logger.info(f'URL PARSING {classid}-{instanceid} in items bd', id=f'{classid}-{instanceid}')
-                                            if craft in items_bd[name]:
-                                                logger.info(f'URL PARSING {classid}-{instanceid} {craft} in item bd', id=f'{classid}-{instanceid}')
-                                                min_price = items_bd[name][craft]['price'] * config['currency'][items_bd[name][craft]['currency']]
-                                                finily_price = 0
-                                                filter_price_log = 0
-                                                for filter_price in config['filter']['autobuy']:
-                                                    if finily_price:
-                                                        break
-                                                    if filter_price == list(config['filter']['autobuy'])[-1]:
-                                                        filter_price_log = filter_price
-                                                        finily_price = min_price * ((100 - config['filter']['autobuy'][filter_price]) / 100)
-                                                    elif min_price <= float(filter_price):
-                                                        filter_price_log = filter_price
-                                                        finily_price = min_price * ((100 - config['filter']['autobuy'][filter_price]) / 100)
-                                                logger.info(f'URL PARSING {classid}-{instanceid} find filter price: {filter_price_log} Procent filter: {config["filter"]["autobuy"][filter_price_log]} New price: {finily_price} BD price: {min_price} Price item: {price}', id=f'{classid}-{instanceid}')
-                                                if price <= finily_price:
-                                                    logger.success(f'URL PARSING {classid}-{instanceid} filter autobuy item Price TM: {price} Price DB: {min_price}', id=f'{classid}-{instanceid}')
-                                                    flag_autobuy = True
-                                                    description = (f'Цена в базе: {min_price}')
-                                                    logger.info(f'WEBSOCKET {classid}-{instanceid} check item in autobuy blacklist', id=f'{classid}-{instanceid}')
-                                                    for black in config['autobuy_blacklist']:
-                                                        if black in name.lower():
-                                                            flag_autobuy = False
+                                            if self.autobuy_1_all_items:
+                                                if craft in items_bd[name]:
+                                                    logger.info(f'URL PARSING {classid}-{instanceid} {craft} in item bd', id=f'{classid}-{instanceid}')
+                                                    min_price = items_bd[name][craft]['price'] * config['currency'][items_bd[name][craft]['currency']]
+                                                    finily_price = 0
+                                                    filter_price_log = 0
+                                                    for filter_price in config['filter']['autobuy']:
+                                                        if finily_price:
                                                             break
-                                                    if flag_autobuy:
-                                                        self.buy_item(classid, instanceid, price, description, name, autobuy=True)
-                                                    else:
-                                                        logger.warning(f'WEBSOCKET {classid}-{instanceid} don"t autobuy, item in blacklist. Blacklist: {black}', id=f'{classid}-{instanceid}')
+                                                        if filter_price == list(config['filter']['autobuy'])[-1]:
+                                                            filter_price_log = filter_price
+                                                            finily_price = min_price * ((100 - config['filter']['autobuy'][filter_price]) / 100)
+                                                        elif min_price <= float(filter_price):
+                                                            filter_price_log = filter_price
+                                                            finily_price = min_price * ((100 - config['filter']['autobuy'][filter_price]) / 100)
+                                                    logger.info(f'URL PARSING {classid}-{instanceid} find filter price: {filter_price_log} Procent filter: {config["filter"]["autobuy"][filter_price_log]} New price: {finily_price} BD price: {min_price} Price item: {price}', id=f'{classid}-{instanceid}')
+                                                    if price <= finily_price:
+                                                        logger.success(f'URL PARSING {classid}-{instanceid} filter autobuy item Price TM: {price} Price DB: {min_price}', id=f'{classid}-{instanceid}')
+                                                        flag_autobuy = True
+                                                        description = (f'Цена в базе: {min_price}')
+                                                        logger.info(f'WEBSOCKET {classid}-{instanceid} check item in autobuy blacklist', id=f'{classid}-{instanceid}')
+                                                        for black in config['autobuy_blacklist']:
+                                                            if black in name.lower():
+                                                                flag_autobuy = False
+                                                                break
+                                                        if flag_autobuy:
+                                                            self.buy_item(classid, instanceid, price, description, name, autobuy=True)
+                                                        else:
+                                                            logger.warning(f'WEBSOCKET {classid}-{instanceid} don"t autobuy, item in blacklist. Blacklist: {black}', id=f'{classid}-{instanceid}')
+                                                else:
+                                                    logger.info(f'URL PARSING {classid}-{instanceid} {craft} not in item bd', id=f'{classid}-{instanceid}')
                                             else:
-                                                logger.info(f'URL PARSING {classid}-{instanceid} {craft} not in item bd', id=f'{classid}-{instanceid}')
+                                                logger.warning('URL PARSING autobuy 1 step disable', id=f'{classid}-{instanceid}')
                                         else:
                                             logger.info(f'URL PARSING {classid}-{instanceid} not in items bd', id=f'{classid}-{instanceid}')
                                         if not flag_autobuy:
@@ -607,7 +636,11 @@ class TM_Parsing():
                     logger.success(f'WEBSOCKET SUCCEFULL CONNECTION')
                     client.send('newitems_tf')
                     while self.parsing_status_websocket:
-                        res = json.loads(json.loads(client.recv(timeout=10))['data'])
+                        if self.websocket_test.empty():
+                          continue
+                        #res = json.loads(json.loads(client.recv(timeout=10))['data'])
+                        res = self.websocket_test.get()
+                        print(res)
                         name = res['i_market_hash_name']
                         classid = res['i_classid']
                         instanceid = res['i_instanceid']
@@ -626,35 +659,37 @@ class TM_Parsing():
                                 logger.info(f'WEBSOCKET {classid}-{instanceid} not in cache', id=f'{classid}-{instanceid}')
                                 if name in items_bd_list:
                                     logger.info(f'WEBSOCKET {classid}-{instanceid} in items bd', id=f'{classid}-{instanceid}')
-                                    min_price = 99999999999
-                                    for craft in items_bd[name]:
-                                        min_price = min(items_bd[name][craft]['price'] * config['currency'][items_bd[name][craft]['currency']], min_price)
-                                    finily_price = 0
-                                    filter_price_log = 0
-                                    for filter_price in config['filter']['autobuy']:
-                                        if finily_price:
-                                            break
-                                        if filter_price == list(config['filter']['autobuy'])[-1]:
-                                            finily_price = min_price * ((100 - config['filter']['autobuy'][filter_price]) / 100)
-                                            filter_price_log = filter_price
-                                        elif min_price <= float(filter_price):
-                                            finily_price = min_price * ((100 - config['filter']['autobuy'][filter_price]) / 100)
-                                            filter_price_log = filter_price
-                                    logger.info(f'WEBSOCKET {classid}-{instanceid} find filter price: {filter_price_log} Procent filter: {config["filter"]["autobuy"][filter_price_log]} New price: {finily_price} BD price: {min_price} Price item: {price}', id=f'{classid}-{instanceid}')
-                                    if price <= finily_price:
-                                        logger.success(f'WEBSOCKET {classid}-{instanceid} filter autobuy item Price TM: {price} Price DB: {min_price}', id=f'{classid}-{instanceid}')
-                                        flag_autobuy = True
-                                        description = (f'Цена в базе: {min_price}')
-                                        logger.info(f'WEBSOCKET {classid}-{instanceid} check item in autobuy blacklist', id=f'{classid}-{instanceid}')
-                                        for black in config['autobuy_blacklist']:
-                                            if black in name.lower():
-                                                flag_autobuy = False
+                                    if self.autobuy_1_all_items:
+                                        min_price = 99999999999
+                                        for craft in items_bd[name]:
+                                            min_price = min(items_bd[name][craft]['price'] * config['currency'][items_bd[name][craft]['currency']], min_price)
+                                        finily_price = 0
+                                        filter_price_log = 0
+                                        for filter_price in config['filter']['autobuy']:
+                                            if finily_price:
                                                 break
-                                        if flag_autobuy:
-                                            self.buy_item(classid, instanceid, price, description, name, autobuy=True)
-                                        else:
-                                            logger.warning(f'WEBSOCKET {classid}-{instanceid} don"t autobuy, item in blacklist. Blacklist: {black}', id=f'{classid}-{instanceid}')
-
+                                            if filter_price == list(config['filter']['autobuy'])[-1]:
+                                                finily_price = min_price * ((100 - config['filter']['autobuy'][filter_price]) / 100)
+                                                filter_price_log = filter_price
+                                            elif min_price <= float(filter_price):
+                                                finily_price = min_price * ((100 - config['filter']['autobuy'][filter_price]) / 100)
+                                                filter_price_log = filter_price
+                                        logger.info(f'WEBSOCKET {classid}-{instanceid} find filter price: {filter_price_log} Procent filter: {config["filter"]["autobuy"][filter_price_log]} New price: {finily_price} BD price: {min_price} Price item: {price}', id=f'{classid}-{instanceid}')
+                                        if price <= finily_price:
+                                            logger.success(f'WEBSOCKET {classid}-{instanceid} filter autobuy item Price TM: {price} Price DB: {min_price}', id=f'{classid}-{instanceid}')
+                                            flag_autobuy = True
+                                            description = (f'Цена в базе: {min_price}')
+                                            logger.info(f'WEBSOCKET {classid}-{instanceid} check item in autobuy blacklist', id=f'{classid}-{instanceid}')
+                                            for black in config['autobuy_blacklist']:
+                                                if black in name.lower():
+                                                    flag_autobuy = False
+                                                    break
+                                            if flag_autobuy:
+                                                self.buy_item(classid, instanceid, price, description, name, autobuy=True)
+                                            else:
+                                                logger.warning(f'WEBSOCKET {classid}-{instanceid} don"t autobuy, item in blacklist. Blacklist: {black}', id=f'{classid}-{instanceid}')
+                                    else:
+                                        logger.warning('URL PARSING autobuy 1 step disable', id=f'{classid}-{instanceid}')
                                 else:
                                     logger.info(f'WEBSOCKET {classid}-{instanceid} not in items bd', id=f'{classid}-{instanceid}')
                                 if not flag_autobuy:
