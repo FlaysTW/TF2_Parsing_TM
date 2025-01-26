@@ -44,7 +44,7 @@ def run(bot: TeleBot, tm: TM_Parsing, bot_parsing: TeleBot):
         buttons = [create_button('Проверить предмет', menu_page.new('check_id')),  # 0
                    create_button('Открыть базу', menu_page.new('base')),  # 1
                    create_button('Удалить предмет', menu_page.new('delete_item')),  # 2
-                   create_button('Меню автобая', autobuy_list.new(data='menu')),  # 3
+                   create_button('Меню парсинга', menu_page.new('parsing_menu')),  # 3
                    create_button('Очистить кэш', menu_page.new('clear_cache')),  # 4
                    create_button('Настройки', menu_page.new('settings')),  # 5
                    create_button('Список ПНБ', menu_page.new('iff'))]  # 6
@@ -57,6 +57,15 @@ def run(bot: TeleBot, tm: TM_Parsing, bot_parsing: TeleBot):
         else:
             bot.send_message(message.chat.id, mes, reply_markup=markup, parse_mode='HTML')
 
+    @bot.callback_query_handler(func= lambda x: menu_page.filter(page='parsing_menu').check(x))
+    @logger.catch()
+    def parsing_menu(callback: CallbackQuery):
+        mes = 'Выберите:'
+        markup = InlineKeyboardMarkup()
+        markup.add(create_button('Меню автобая', autobuy_list.new(data='menu')))
+        markup.add(create_button('Меню уведомлений', 'huyhuy'))
+        markup.add(create_button('Вернуться в меню', menu_page.new(page='menu')))
+        bot.edit_message_text(mes, callback.message.chat.id, callback.message.message_id, reply_markup=markup)
 
     @bot.callback_query_handler(func= lambda x: menu_page.filter(page='iff').check(x))
     @logger.catch()

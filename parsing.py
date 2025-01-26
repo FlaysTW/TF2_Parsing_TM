@@ -53,6 +53,8 @@ class TM_Parsing():
     autobuy_unusual = False
     autobuy_1_all_items = False
     autobuy_2_all_items = False
+    autobuy_color = False
+    autobuy_scores = False
 
     websocket_test = queue.Queue()
 
