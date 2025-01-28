@@ -9,7 +9,7 @@ from telebot import TeleBot
 from telebot.types import Message, InlineKeyboardMarkup, CallbackQuery
 from utils.loging import logger
 from utils.config import config
-from tg_bot.callbacks_data import menu_page, settings_menu, iff_settings, autobuy_list
+from tg_bot.callbacks_data import menu_page, settings_menu, iff_settings, autobuy_list, notification_list
 from parsing import TM_Parsing
 from tg_bot.utils import create_button, cancel
 from utils.loading_data import items_bd_list, items_bd_list_unusual, items_cache, future
@@ -63,7 +63,7 @@ def run(bot: TeleBot, tm: TM_Parsing, bot_parsing: TeleBot):
         mes = 'Выберите:'
         markup = InlineKeyboardMarkup()
         markup.add(create_button('Меню автобая', autobuy_list.new(data='menu')))
-        markup.add(create_button('Меню уведомлений', 'huyhuy'))
+        markup.add(create_button('Меню уведомлений', notification_list.new(data='menu')))
         markup.add(create_button('Вернуться в меню', menu_page.new(page='menu')))
         bot.edit_message_text(mes, callback.message.chat.id, callback.message.message_id, reply_markup=markup)
 
@@ -912,3 +912,8 @@ def run(bot: TeleBot, tm: TM_Parsing, bot_parsing: TeleBot):
             config['api_key'] = old_api
             tm.TM_KEY = old_api
             bot.send_message(message.chat.id, f'Ошибка при смене ключа! Ключ на данный момент: {old_api}')
+
+    @bot.callback_query_handler(func=lambda x: menu_page.filter(page='notification_menu').check(x))
+    @logger.catch()
+    def notification_menu(callback: CallbackQuery):
+        bot.answer_callback_query(callback.id)

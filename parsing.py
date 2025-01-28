@@ -131,7 +131,7 @@ class TM_Parsing():
                     instanceid = raw['instanceid']
                     priority = raw['priority']
                     logger.info(f'PROCCESING ITEM new {classid}-{instanceid}', id=f'{classid}-{instanceid}')
-                    if not any(i in name for i in ['Casemaker', 'Unusual', '']):
+                    if not any(i in name for i in ['Casemaker', 'Unusual']):
                         if any(i in name for i in config['blacklist']):  # TODO: Blacklist
                             logger.info(f'PROCCESING ITEM {classid}-{instanceid} add blacklist', id=f'{classid}-{instanceid}')
                             self.blacklist_items.append(f'{datetime.datetime.now()}, {name}, {classid}, {instanceid}, https://tf2.tm/en/item/{classid}-{instanceid}')
@@ -177,61 +177,108 @@ class TM_Parsing():
             item = ""
             full_description = ''
             mes_description = ''
+            lang = 'ru'
             try:
                 price_item_raw = float(resp['min_price'])
                 price_item = int(resp['min_price']) / 100
             except Exception as ex:
-                logger.warning(f"PROCCESING ITEM {classid}-{instanceid} Fail get info item", id=f'{classid}-{instanceid}')
-                logger.exception(f'{ex}', id=f'{classid}-{instanceid}')
-                logger.exception(f'{ex}')
-                items_cache.pop(f"{classid}-{instanceid}")
-                self.status_items.pop(f"{classid}-{instanceid}")
-                delete_logger_item(f'{classid}-{instanceid}')
-                return
+                logger.warning(f"PROCCESING ITEM {classid}-{instanceid} Fail get RU info item", id=f'{classid}-{instanceid}')
+                #logger.exception(f'{ex}', id=f'{classid}-{instanceid}')
+                #logger.exception(f'{ex}')
+                r = requests.get(f'https://tf2.tm/api/ItemInfo/{classid}_{instanceid}/en/?key={self.TM_KEY}', timeout=20)
+                resp = r.json()
+                lang = 'en'
+                try:
+                    price_item_raw = float(resp['min_price'])
+                    price_item = int(resp['min_price']) / 100
+                except Exception as ex:
+                    logger.warning(f"PROCCESING ITEM {classid}-{instanceid} Fail get EN info item", id=f'{classid}-{instanceid}')
+                    #logger.exception(f'{ex}', id=f'{classid}-{instanceid}')
+                    #logger.exception(f'{ex}')
+                    items_cache.pop(f"{classid}-{instanceid}")
+                    self.status_items.pop(f"{classid}-{instanceid}")
+                    delete_logger_item(f'{classid}-{instanceid}')
+                    return
 
             effect = ''
             non_craftable = ''
             quality = False
             message_thread_id = 7
-            spell = False
+            spell = []
             killstreak = False
+            score = []
+            paint = ''
             logger.info(f'PROCCESING ITEM {classid}-{instanceid} check description', id=f'{classid}-{instanceid}')
             if resp['description']:
-                for des in resp['description']:
-                    des_text = des['value']
-                    full_description += des_text + '\n'
-                    if 'color' in des:
-                        if 'эффект: ' in des_text and des['color'] == 'ffd700':
-                            effect = des_text.split('эффект: ')[1].strip()
-                            continue
-                        elif ': ' in des_text and des_text[-1] == ')' and des_text[0] == '(' and des['color'] == '756b5e':
-                            mes_description += des_text + '\n'
-                            continue
-                        elif 'Цвет краски' in des_text and des['color'] == '756b5e':
-                            mes_description += des_text + '\n'
-                            continue
-                        elif 'заклятия работают' in des_text and des['color'] == '7ea9d1':
-                            mes_description += des_text + '\n'
-                            message_thread_id = 5
-                            spell = True
-                            continue
-                        elif 'Серийный убийца' in des_text:
-                            if any(kill.lower() in des_text.lower() for kill in config['killstreaker_whitelist']):
-                                killstreak = True
-                                mes_description += des_text + '\n'
-                                if not spell:
-                                    message_thread_id = 51331
+                if lang == 'ru':
+                    for des in resp['description']:
+                        des_text = des['value']
+                        full_description += des_text + '\n'
+                        if 'color' in des:
+                            if 'эффект: ' in des_text and des['color'] == 'ffd700':
+                                effect = des_text.split('эффект: ')[1].strip()
                                 continue
+                            elif ': ' in des_text and des_text[-1] == ')' and des_text[0] == '(' and des['color'] == '756b5e':
+                                mes_description += des_text + '\n'
+                                score.append(des_text)
+                                continue
+                            elif 'Цвет краски' in des_text and des['color'] == '756b5e':
+                                mes_description += des_text + '\n'
+                                paint = des_text.split(':', 1)[1].strip()
+                                continue
+                            elif 'заклятия работают' in des_text and des['color'] == '7ea9d1':
+                                mes_description += des_text + '\n'
+                                message_thread_id = 5
+                                spell.append(des_text.split(':', 1)[1].strip())
+                                continue
+                            elif 'Серийный убийца' in des_text:
+                                if any(kill.lower() in des_text.lower() for kill in config['killstreaker_whitelist']):
+                                    killstreak = True
+                                    mes_description += des_text + '\n'
+                                    if not spell:
+                                        message_thread_id = 51331
+                                    continue
+                elif lang == 'en':
+                    for des in resp['description']:
+                        des_text = des['value']
+                        full_description += des_text + '\n'
+                        if 'color' in des:
+                            if 'Effect: ' in des_text and des['color'] == 'ffd700':
+                                effect = des_text.split('Effect: ')[1].strip()
+                                continue
+                            elif ': ' in des_text and des_text[-1] == ')' and des_text[0] == '(' and des['color'] == '756b5e':
+                                mes_description += des_text + '\n'
+                                score.append(des_text)
+                                continue
+                            elif 'Paint Color' in des_text and des['color'] == '756b5e':
+                                mes_description += des_text + '\n'
+                                paint = des_text.split(':', 1)[1].strip()
+                                continue
+                            elif 'spell only' in des_text and des['color'] == '7ea9d1':
+                                mes_description += des_text + '\n'
+                                message_thread_id = 5
+                                spell.append(des_text.split(':', 1)[1].strip())
+                                continue
+                            elif 'Killstreaker' in des_text:
+                                if any(kill.lower() in des_text.lower() for kill in config['killstreaker_whitelist']):
+                                    killstreak = True
+                                    mes_description += des_text + '\n'
+                                    if not spell:
+                                        message_thread_id = 51331
+                                    continue
 
             logger.info(f'PROCCESING ITEM {classid}-{instanceid} full description: {full_description}', id=f'{classid}-{instanceid}')
             logger.info(f'PROCCESING ITEM {classid}-{instanceid} unusual effect: {effect}', id=f'{classid}-{instanceid}')
             logger.info(f'PROCCESING ITEM {classid}-{instanceid} spell: {spell}', id=f'{classid}-{instanceid}')
             logger.info(f'PROCCESING ITEM {classid}-{instanceid} killstreak: {killstreak}', id=f'{classid}-{instanceid}')
+            logger.info(f'PROCCESING ITEM {classid}-{instanceid} score: {score}', id=f'{classid}-{instanceid}')
+            logger.info(f'PROCCESING ITEM {classid}-{instanceid} paint: {paint}', id=f'{classid}-{instanceid}')
 
             if mes_description:
                 mes_description = 'Описание:\n' + mes_description + '\n\n'
 
-            if effect:
+            effect_raw = str(effect)
+            if effect and lang == 'ru':
                 if effect in translate_unusual_effect['ru']:
                     effect = translate_unusual_effect['ru'][effect]
                 else:
@@ -289,13 +336,133 @@ class TM_Parsing():
             if any(i in name for i in ['(Field-Tested)', '(Battle Scarred)', '(Well-Worn)', '(Factory New)', '(Minimal Wear)']) and not item:
                 quality = True
 
-            logger.info(f'PROCCESING ITEM {classid}-{instanceid} check quality: {quality}', id=f'{classid}-{instanceid}')
+            logger.info(f'PROCCESING ITEM {classid}-{instanceid} quality: {quality}', id=f'{classid}-{instanceid}')
 
-            if item:
-                flag_autobuy = False
-                autobuy_price = 0
-                filter_price_log = 0
+            logger.info(f'PROCCESING ITEM {classid}-{instanceid} check autobuy', id=f'{classid}-{instanceid}')
+            flag_autobuy = False
+            if price_item <= config['autobuy_max_price'] and price_item_raw > 0:
+                if self.autobuy_spell:
+                    logger.info(f'PROCCESING ITEM {classid}-{instanceid} check spell autobuy', id=f'{classid}-{instanceid}')
+                    flag_autobuy_spell = False
+                    for spell_name in config['autobuy_spells'][lang]:
+                        for spell_item in spell:
+                            if spell_name.lower() in spell_item.lower():
+                                if item:
+                                    if price_item <= config['autobuy_spells'][lang][spell_name]['over_price'] + price_db:
+                                        flag_autobuy_spell = True
+                                else:
+                                    if price_item <= config['autobuy_spells'][lang][spell_name]['price']:
+                                        flag_autobuy_spell = True
+
+                    if flag_autobuy_spell:
+                        logger.info(f'PROCCESING ITEM {classid}-{instanceid} spell autobuy item Price TM: {price_item} Price DB: {price_db}', id=f'{classid}-{instanceid}')
+                        description = (f'Цена в базе: {price_db}')
+                        logger.info(f'PROCCESING ITEM {classid}-{instanceid} check item in autobuy blacklist', id=f'{classid}-{instanceid}')
+                        for black in config['autobuy_blacklist']:
+                            if black in name.lower():
+                                flag_autobuy_spell = False
+
+                        if flag_autobuy_spell:
+                            flag_autobuy = True
+                            logger.info('Попытка купить предмет!')
+                            self.buy_item(classid, instanceid, price_item, description, name, autobuy=True)
+                        else:
+                            logger.warning(f'PROCCESING ITEM {classid}-{instanceid} don"t autobuy, item in blacklist. Blacklist: {black}', id=f'{classid}-{instanceid}')
+                    else:
+                        logger.warning(f'PROCCESING ITEM {classid}-{instanceid} don"t autobuy spell filter',id=f'{classid}-{instanceid}')
+                else:
+                    logger.warning(f'PROCCESING ITEM {classid}-{instanceid} autobuy spell disable')
+
+                if self.autobuy_unusual:
+                    logger.info(f'PROCCESING ITEM {classid}-{instanceid} check unusual autobuy', id=f'{classid}-{instanceid}')
+                    flag_autobuy_unusual = False
+                    for unusual_name in config['autobuy_unusual'][lang]:
+                        if unusual_name.lower() in effect_raw.lower():
+                            if price_item <= config['autobuy_unusual'][lang][unusual_name]['price']:
+                                    flag_autobuy_unusual = True
+
+                    if flag_autobuy_unusual:
+                        logger.info(f'PROCCESING ITEM {classid}-{instanceid} unusual autobuy item Price TM: {price_item} Price DB: {price_db}', id=f'{classid}-{instanceid}')
+                        description = (f'Цена в базе: {price_db}')
+                        logger.info(f'PROCCESING ITEM {classid}-{instanceid} check item in autobuy blacklist', id=f'{classid}-{instanceid}')
+                        for black in config['autobuy_blacklist']:
+                            if black in name.lower():
+                                flag_autobuy_unusual = False
+
+                        if flag_autobuy_unusual:
+                            flag_autobuy = True
+                            logger.info('Попытка купить предмет!')
+                            self.buy_item(classid, instanceid, price_item, description, name, autobuy=True)
+                        else:
+                            logger.warning(f'PROCCESING ITEM {classid}-{instanceid} don"t autobuy, item in blacklist. Blacklist: {black}', id=f'{classid}-{instanceid}')
+                    else:
+                        logger.warning(f'PROCCESING ITEM {classid}-{instanceid} don"t autobuy unusual filter',id=f'{classid}-{instanceid}')
+                else:
+                    logger.warning(f'PROCCESING ITEM {classid}-{instanceid} autobuy unusual disable')
+
+                if self.autobuy_color:
+                    logger.info(f'PROCCESING ITEM {classid}-{instanceid} check color autobuy', id=f'{classid}-{instanceid}')
+                    flag_autobuy_color = False
+                    for color_name in config['autobuy_color'][lang]:
+                        if color_name.lower() in paint.lower():
+                            if price_item <= config['autobuy_color'][lang][color_name]['price']:
+                                    flag_autobuy_color = True
+
+                    if flag_autobuy_color:
+                        logger.info(f'PROCCESING ITEM {classid}-{instanceid} color autobuy item Price TM: {price_item} Price DB: {price_db}', id=f'{classid}-{instanceid}')
+                        description = (f'Цена в базе: {price_db}')
+                        logger.info(f'PROCCESING ITEM {classid}-{instanceid} check item in autobuy blacklist', id=f'{classid}-{instanceid}')
+                        for black in config['autobuy_blacklist']:
+                            if black in name.lower():
+                                flag_autobuy_color = False
+
+                        if flag_autobuy_color:
+                            flag_autobuy = True
+                            logger.info('Попытка купить предмет!')
+                            self.buy_item(classid, instanceid, price_item, description, name, autobuy=True)
+                        else:
+                            logger.warning(f'PROCCESING ITEM {classid}-{instanceid} don"t autobuy, item in blacklist. Blacklist: {black}', id=f'{classid}-{instanceid}')
+                    else:
+                        logger.warning(f'PROCCESING ITEM {classid}-{instanceid} don"t autobuy color filter',id=f'{classid}-{instanceid}')
+                else:
+                    logger.warning(f'PROCCESING ITEM {classid}-{instanceid} autobuy color disable')
+
+                if self.autobuy_scores:
+                    logger.info(f'PROCCESING ITEM {classid}-{instanceid} check score autobuy', id=f'{classid}-{instanceid}')
+                    flag_autobuy_score = False
+                    for score_name in config['autobuy_scores'][lang]:
+                        for score_item in score:
+                            if score_name.lower() in score_item.lower():
+                                if price_item <= config['autobuy_scores'][lang][score_name]['max_price']:
+                                    if item:
+                                        if price_item <= config['autobuy_scores'][lang][score_name]['over_price'] + price_db:
+                                            flag_autobuy_score = True
+                                    else:
+                                        flag_autobuy_score = True
+
+                    if flag_autobuy_score:
+                        logger.info(f'PROCCESING ITEM {classid}-{instanceid} score autobuy item Price TM: {price_item} Price DB: {price_db}', id=f'{classid}-{instanceid}')
+                        description = (f'Цена в базе: {price_db}')
+                        logger.info(f'PROCCESING ITEM {classid}-{instanceid} check item in autobuy blacklist', id=f'{classid}-{instanceid}')
+                        for black in config['autobuy_blacklist']:
+                            if black in name.lower():
+                                flag_autobuy_score = False
+
+                        if flag_autobuy_score:
+                            flag_autobuy = True
+                            logger.info('Попытка купить предмет!')
+                            self.buy_item(classid, instanceid, price_item, description, name, autobuy=True)
+                        else:
+                            logger.warning(f'PROCCESING ITEM {classid}-{instanceid} don"t autobuy, item in blacklist. Blacklist: {black}', id=f'{classid}-{instanceid}')
+                    else:
+                        logger.warning(f'PROCCESING ITEM {classid}-{instanceid} don"t autobuy scores filter',id=f'{classid}-{instanceid}')
+                else:
+                    logger.warning(f'PROCCESING ITEM {classid}-{instanceid} autobuy score disable')
+
                 if self.autobuy_2_all_items:
+                    flag_autobuy_filter = False
+                    autobuy_price = 0
+                    filter_price_log = 0
                     for filter_price in config['filter']['autobuy']:
                         if autobuy_price:
                             break
@@ -305,26 +472,45 @@ class TM_Parsing():
                         elif price_db <= float(filter_price):
                             filter_price_log = filter_price
                             autobuy_price = price_db * ((100 - config['filter']['autobuy'][filter_price]) / 100)
-                    logger.info(f'PROCCESING ITEM {classid}-{instanceid} find autobuy filter price: {filter_price_log} Procent filter: {config["filter"]["autobuy"][filter_price_log]} New price: {autobuy_price} BD price: {price_db} Price item: {price_item}', id=f'{classid}-{instanceid}')
+                    logger.info(f'PROCCESING ITEM {classid}-{instanceid} find autobuy filter price: {filter_price_log} Procent filter: {config["filter"]["autobuy"][filter_price_log]} New price: {autobuy_price} BD price: {price_db} Price item: {price_item}',id=f'{classid}-{instanceid}')
 
-                    if price_item <= autobuy_price and price_item_raw >= 0:
-                        flag_autobuy = True
-                        print('Покупаем предмет по фильтру', price_item, autobuy_price)
+                    if price_item <= autobuy_price:
+                        flag_autobuy_filter = True
 
-                    if flag_autobuy:
-                        logger.info(f'PROCCESING ITEM {classid}-{instanceid} filter autobuy item Price TM: {price_item} Price DB: {price_db}', id=f'{classid}-{instanceid}')
-                        logger.info('Попытка купить предмет!')
+                    if flag_autobuy_filter:
+                        logger.info(f'PROCCESING ITEM {classid}-{instanceid} filter autobuy item Price TM: {price_item} Price DB: {price_db}',id=f'{classid}-{instanceid}')
                         description = (f'Цена в базе: {price_db}')
-                        logger.info(f'PROCCESING ITEM {classid}-{instanceid} check item in autobuy blacklist', id=f'{classid}-{instanceid}')
+                        logger.info(f'PROCCESING ITEM {classid}-{instanceid} check item in autobuy blacklist',id=f'{classid}-{instanceid}')
                         for black in config['autobuy_blacklist']:
                             if black in name.lower():
-                                flag_autobuy = False
-                        if flag_autobuy:
+                                flag_autobuy_filter = False
+                        if flag_autobuy_filter:
+                            flag_autobuy = True
+                            logger.info('Попытка купить предмет!')
                             self.buy_item(classid, instanceid, price_item, description, name, autobuy=True)
                         else:
-                            logger.warning(f'PROCCESING ITEM {classid}-{instanceid} don"t autobuy, item in blacklist. Blacklist: {black}', id=f'{classid}-{instanceid}')
+                            logger.warning(f'PROCCESING ITEM {classid}-{instanceid} don"t autobuy, item in blacklist. Blacklist: {black}',id=f'{classid}-{instanceid}')
                 else:
                     logger.warning(f'PROCCESING ITEM {classid}-{instanceid} autobuy 2 step disable')
+            else:
+                logger.info(f'PROCCESING ITEM {classid}-{instanceid} {price_item} > {config["autobuy_max_price"]}', id=f'{classid}-{instanceid}')
+            logger.info(f'PROCCESING ITEM {classid}-{instanceid} autobuy: {flag_autobuy}', id=f'{classid}-{instanceid}')
+
+            if not killstreak and not spell and not effect and score:
+                for score_name in config['notification_score'][lang]:
+                    for score_item in score:
+                        if score_name.lower() in score_item:
+                            if price_item <= config['notification_score'][lang][score_item]['price']:
+                                message_thread_id = 51809
+
+            if not killstreak and not spell and not effect and paint and message_thread_id != 51809:
+                for paint_name in config['notification_color'][lang]:
+                    if paint_name.lower() in paint.lower():
+                        if price_item <= config['notification_color'][lang][paint_name]['price']:
+                            message_thread_id = 51806
+
+
+            if item:
                 filter_price_log = 0
                 finily_price = 0
                 for filter_price in config['filter']['notification']:
@@ -339,8 +525,8 @@ class TM_Parsing():
 
                 logger.info(f'PROCCESING ITEM {classid}-{instanceid} find notification filter price: {filter_price_log} Procent filter: {config["filter"]["notification"][filter_price_log]} New price: {finily_price} BD price: {price_db} Price item: {price_item}', id=f'{classid}-{instanceid}')
 
-                if finily_price or spell or priority or effect:
-                    if price_item_raw == -1 and (not spell or not effect or killstreak):
+                if finily_price or spell or priority or effect or killstreak:
+                    if price_item_raw == -1 and (not spell or not effect or not killstreak):
                         finily_price = -10000
                         if price_db >= 500:
                             logger.info(f'PROCCESING ITEM {classid}-{instanceid} get priority Price db: {price_db}', id=f'{classid}-{instanceid}')
@@ -379,6 +565,20 @@ class TM_Parsing():
                 self.bot.send_item(message, classid, instanceid, price_item_raw, markup_undefiend=True, message_thread_id=message_thread_id)
             elif killstreak:
                 message_thread_id = 51331
+                logger.success(f'PROCCESING ITEM {classid}-{instanceid} send message in telegram in chanel id: {message_thread_id}', id=f'{classid}-{instanceid}')
+                message = f'{name}{effect}\n{non_craftable}\n{mes_description}'
+                message += f'Цена на ТМ: {round(price_item / config["currency"]["keys"], 2)} keys, {price_item} ₽\n\n'
+                message += f'https://tf2.tm/en/item/{classid}-{instanceid}'
+                self.bot.send_item(message, classid, instanceid, price_item_raw, markup_undefiend=True, message_thread_id=message_thread_id)
+            elif score:
+                message_thread_id = 51809
+                logger.success(f'PROCCESING ITEM {classid}-{instanceid} send message in telegram in chanel id: {message_thread_id}', id=f'{classid}-{instanceid}')
+                message = f'{name}{effect}\n{non_craftable}\n{mes_description}'
+                message += f'Цена на ТМ: {round(price_item / config["currency"]["keys"], 2)} keys, {price_item} ₽\n\n'
+                message += f'https://tf2.tm/en/item/{classid}-{instanceid}'
+                self.bot.send_item(message, classid, instanceid, price_item_raw, markup_undefiend=True, message_thread_id=message_thread_id)
+            elif paint:
+                message_thread_id = 51806
                 logger.success(f'PROCCESING ITEM {classid}-{instanceid} send message in telegram in chanel id: {message_thread_id}', id=f'{classid}-{instanceid}')
                 message = f'{name}{effect}\n{non_craftable}\n{mes_description}'
                 message += f'Цена на ТМ: {round(price_item / config["currency"]["keys"], 2)} keys, {price_item} ₽\n\n'
@@ -638,11 +838,7 @@ class TM_Parsing():
                     logger.success(f'WEBSOCKET SUCCEFULL CONNECTION')
                     client.send('newitems_tf')
                     while self.parsing_status_websocket:
-                        if self.websocket_test.empty():
-                          continue
-                        #res = json.loads(json.loads(client.recv(timeout=10))['data'])
-                        res = self.websocket_test.get()
-                        print(res)
+                        res = json.loads(json.loads(client.recv(timeout=10))['data'])
                         name = res['i_market_hash_name']
                         classid = res['i_classid']
                         instanceid = res['i_instanceid']

@@ -15,8 +15,40 @@
         "Cooler",
         "Taunt"
     ],
+    "autobuy_max_price": 123900.0,
     "autobuy_blacklist": [],
-    "killstreaker_whitelist": ["Торнадо", "Огненные рога"],
+    "killstreaker_whitelist": [
+        "Торнадо",
+        "Огненные рога",
+        "Tornado",
+        "Fire Horns"
+    ],
+    "notification_color": {
+        "ru": {},
+        "en": {}
+    },
+    "notification_score": {
+        "ru": {},
+        "en": {}
+    },
+    "autobuy_spells": {
+        "ru": {},
+        "en": {}
+    },
+    "autobuy_unusual": {
+        "ru": {},
+        "en": {}
+    },
+    "autobuy_color": {
+        "ru": {},
+        "en": {}
+    },
+    "autobuy_scores": {
+        "ru": {
+        },
+        "en": {
+        }
+    },
     "filter": {
         "autobuy": {
             "30": 95,
@@ -63,19 +95,19 @@
             "price": "270.66"
         },
         "3": {
-            "name": "Haunted Voodoo-Cursed Demoman Soul",
-            "url": "https://tf2.tm/en/item/92550809-11040545",
-            "price": "99"
+            "name": "Vintage Foster's Facade",
+            "url": "https://tf2.tm/en/item/11041013-19180219",
+            "price": "499"
         },
         "4": {
-            "name": "The Anger",
-            "url": "https://tf2.tm/item/101798779-92551936",
-            "price": "720"
+            "name": "Strange Festive Sandvich",
+            "url": "https://tf2.tm/en/item/4147016308-2742358170",
+            "price": "4780.05"
         },
         "5": {
-            "name": "Unusual Antarctic Eyewear",
-            "url": "https://tf2.tm/item/5416639741-187975041",
-            "price": "7817.52"
+            "name": "Unusual Taunt: The Boston Breakdance",
+            "url": "https://tf2.tm/en/item/2569410309-11041008",
+            "price": "950"
         }
     }
 }

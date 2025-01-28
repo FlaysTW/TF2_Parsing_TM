@@ -8,3 +8,4 @@ item_message = CallbackData('classid', 'instanceid', 'price', 'type', prefix='im
 settings_menu = CallbackData('type', 'dump', prefix='st')
 iff_settings = CallbackData('page', 'type', 'page_num', prefix='if')
 autobuy_list = CallbackData('data', prefix='autobuy')
+notification_list = CallbackData('data', prefix='notific')
