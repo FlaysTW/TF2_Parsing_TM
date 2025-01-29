@@ -68,19 +68,32 @@ class TM_Parsing():
         self.create_thread_save_cache()
 
     def buy_item(self, classid, instanceid, price, description = '', title = '', autobuy=False):
-        url = 'ofdpkt'
-        if title:
-            name = title
+        url = f'https://tf2.tm/api/Buy/{classid}_{instanceid}/{price}//?key={self.TM_KEY}'
+        r = requests.get(url)
+        if r.status_code == 200:
+            resp = r.json()
+            result = resp['result']
+            if 'ok' == result:
+                result = 'Куплен!'
+            else:
+                result = result.split('.')[0]
+            if title:
+                name = title
+            else:
+                name = items_cache[f"{classid}-{instanceid}"]["name"]
+            mes = (f'Покупка предмета!\n'
+                   f'Результат покупки: {result}\n'
+                   f'Название предмета: {name}\n'
+                   f'Айди предмета: <a href="https://tf2.tm/en/item/{classid}-{instanceid}">{classid}-{instanceid}</a>\n'
+                   f'Цена на ТМ: {price}\n'
+                   f'{description}')
+            print(mes)
+            if autobuy:
+                self.bot.send_item(mes, classid, instanceid, price, 2, markup_autobuy=True)
+            else:
+                self.bot.send_item(mes, classid, instanceid, price, 2)
         else:
-            name = items_cache[f"{classid}-{instanceid}"]["name"]
-        mes = (f'Покупка предмета!\n'
-               f'Название предмета: {name}\n'
-               f'Айди предмета: <a href="https://tf2.tm/en/item/{classid}-{instanceid}">{classid}-{instanceid}</a>\n'
-               f'Цена на ТМ: {price}\n'
-               f'{description}')
-        if autobuy:
-            self.bot.send_item(mes, classid, instanceid, price, 2, markup_autobuy=True)
-        else:
+            mes = f'Попытка купить предмет <a href="https://tf2.tm/en/item/{classid}-{instanceid}">{classid}-{instanceid}</a> оказалась неуспешным'
             self.bot.send_item(mes, classid, instanceid, price, 2)
 
     def get_balance(self):
@@ -365,7 +378,7 @@ class TM_Parsing():
                         if flag_autobuy_spell:
                             flag_autobuy = True
                             logger.info('Попытка купить предмет!')
-                            self.buy_item(classid, instanceid, price_item, description, name, autobuy=True)
+                            self.buy_item(classid, instanceid, price_item_raw, description, name, autobuy=True)
                         else:
                             logger.warning(f'PROCCESING ITEM {classid}-{instanceid} don"t autobuy, item in blacklist. Blacklist: {black}', id=f'{classid}-{instanceid}')
                     else:
@@ -392,7 +405,7 @@ class TM_Parsing():
                         if flag_autobuy_unusual:
                             flag_autobuy = True
                             logger.info('Попытка купить предмет!')
-                            self.buy_item(classid, instanceid, price_item, description, name, autobuy=True)
+                            self.buy_item(classid, instanceid, price_item_raw, description, name, autobuy=True)
                         else:
                             logger.warning(f'PROCCESING ITEM {classid}-{instanceid} don"t autobuy, item in blacklist. Blacklist: {black}', id=f'{classid}-{instanceid}')
                     else:
@@ -419,7 +432,7 @@ class TM_Parsing():
                         if flag_autobuy_color:
                             flag_autobuy = True
                             logger.info('Попытка купить предмет!')
-                            self.buy_item(classid, instanceid, price_item, description, name, autobuy=True)
+                            self.buy_item(classid, instanceid, price_item_raw, description, name, autobuy=True)
                         else:
                             logger.warning(f'PROCCESING ITEM {classid}-{instanceid} don"t autobuy, item in blacklist. Blacklist: {black}', id=f'{classid}-{instanceid}')
                     else:
@@ -451,7 +464,7 @@ class TM_Parsing():
                         if flag_autobuy_score:
                             flag_autobuy = True
                             logger.info('Попытка купить предмет!')
-                            self.buy_item(classid, instanceid, price_item, description, name, autobuy=True)
+                            self.buy_item(classid, instanceid, price_item_raw, description, name, autobuy=True)
                         else:
                             logger.warning(f'PROCCESING ITEM {classid}-{instanceid} don"t autobuy, item in blacklist. Blacklist: {black}', id=f'{classid}-{instanceid}')
                     else:
@@ -487,7 +500,7 @@ class TM_Parsing():
                         if flag_autobuy_filter:
                             flag_autobuy = True
                             logger.info('Попытка купить предмет!')
-                            self.buy_item(classid, instanceid, price_item, description, name, autobuy=True)
+                            self.buy_item(classid, instanceid, price_item_raw, description, name, autobuy=True)
                         else:
                             logger.warning(f'PROCCESING ITEM {classid}-{instanceid} don"t autobuy, item in blacklist. Blacklist: {black}',id=f'{classid}-{instanceid}')
                 else:
@@ -729,6 +742,7 @@ class TM_Parsing():
                                 if f'{classid}-{instanceid}' not in self.status_items:
                                     self.status_items[f'{classid}-{instanceid}'] = False
                                 create_logger_item(f'{classid}-{instanceid}')
+                                price_raw = int(item[2])
                                 price = float(item[2]) / 100
                                 name = item[13]
                                 logger.success(f'URL PARSING NEW ITEM {classid}-{instanceid} {name}', id=f'{classid}-{instanceid}')
@@ -768,7 +782,7 @@ class TM_Parsing():
                                                                 flag_autobuy = False
                                                                 break
                                                         if flag_autobuy:
-                                                            self.buy_item(classid, instanceid, price, description, name, autobuy=True)
+                                                            self.buy_item(classid, instanceid, price_raw, description, name, autobuy=True)
                                                         else:
                                                             logger.warning(f'WEBSOCKET {classid}-{instanceid} don"t autobuy, item in blacklist. Blacklist: {black}', id=f'{classid}-{instanceid}')
                                                 else:
@@ -799,7 +813,7 @@ class TM_Parsing():
                                     future['autobuy'].pop(f"{classid}-{instanceid}")
                                     priority = True
                                     flag = True
-                                    self.buy_item(classid, instanceid, price, description, name)
+                                    self.buy_item(classid, instanceid, price_raw, description, name)
                                 else:
                                     old_price = future['autobuy'][f"{classid}-{instanceid}"]['old_price']
                                     procent = future['autobuy'][f"{classid}-{instanceid}"]['procent']
@@ -846,6 +860,7 @@ class TM_Parsing():
                             self.status_items[f'{classid}-{instanceid}'] = False
                         create_logger_item(f'{classid}-{instanceid}')
                         price = res['ui_price']
+                        price_raw = price * 100
                         logger.success(f'WEBSOKCET NEW ITEM {classid}-{instanceid} {name}', id=f'{classid}-{instanceid}')
 
                         flag = False
@@ -883,7 +898,7 @@ class TM_Parsing():
                                                     flag_autobuy = False
                                                     break
                                             if flag_autobuy:
-                                                self.buy_item(classid, instanceid, price, description, name, autobuy=True)
+                                                self.buy_item(classid, instanceid, price_raw, description, name, autobuy=True)
                                             else:
                                                 logger.warning(f'WEBSOCKET {classid}-{instanceid} don"t autobuy, item in blacklist. Blacklist: {black}', id=f'{classid}-{instanceid}')
                                     else:
@@ -912,7 +927,7 @@ class TM_Parsing():
                             future['autobuy'].pop(f"{classid}-{instanceid}")
                             priority = True
                             flag = True
-                            self.buy_item(classid, instanceid, price, description, name)
+                            self.buy_item(classid, instanceid, price_raw, description, name)
                         else:
                             old_price = future['autobuy'][f"{classid}-{instanceid}"]['old_price']
                             procent = future['autobuy'][f"{classid}-{instanceid}"]['procent']
