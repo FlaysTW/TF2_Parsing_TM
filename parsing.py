@@ -192,7 +192,7 @@ class TM_Parsing():
             mes_description = ''
             lang = 'ru'
             try:
-                price_item_raw = float(resp['min_price'])
+                price_item_raw = int(resp['min_price'])
                 price_item = int(resp['min_price']) / 100
             except Exception as ex:
                 logger.warning(f"PROCCESING ITEM {classid}-{instanceid} Fail get RU info item", id=f'{classid}-{instanceid}')
@@ -202,7 +202,7 @@ class TM_Parsing():
                 resp = r.json()
                 lang = 'en'
                 try:
-                    price_item_raw = float(resp['min_price'])
+                    price_item_raw = int(resp['min_price'])
                     price_item = int(resp['min_price']) / 100
                 except Exception as ex:
                     logger.warning(f"PROCCESING ITEM {classid}-{instanceid} Fail get EN info item", id=f'{classid}-{instanceid}')
@@ -860,7 +860,7 @@ class TM_Parsing():
                             self.status_items[f'{classid}-{instanceid}'] = False
                         create_logger_item(f'{classid}-{instanceid}')
                         price = res['ui_price']
-                        price_raw = price * 100
+                        price_raw = int(price * 100)
                         logger.success(f'WEBSOKCET NEW ITEM {classid}-{instanceid} {name}', id=f'{classid}-{instanceid}')
 
                         flag = False
