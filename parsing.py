@@ -85,7 +85,7 @@ class TM_Parsing():
                    f'Результат покупки: {result}\n'
                    f'Название предмета: {name}\n'
                    f'Айди предмета: <a href="https://tf2.tm/en/item/{classid}-{instanceid}">{classid}-{instanceid}</a>\n'
-                   f'Цена на ТМ: {price}\n'
+                   f'Цена на ТМ: {round(price / 100, 2)}\n'
                    f'{description}')
             print(mes)
             if autobuy:
@@ -145,7 +145,7 @@ class TM_Parsing():
                     priority = raw['priority']
                     logger.info(f'PROCCESING ITEM new {classid}-{instanceid}', id=f'{classid}-{instanceid}')
                     if not any(i in name for i in ['Casemaker', 'Unusual']):
-                        if any(i in name for i in config['blacklist']):  # TODO: Blacklist
+                        if any(i in name for i in config['blacklist']) or ('Kit' in name and 'Professional' not in name):  # TODO: Blacklist
                             logger.info(f'PROCCESING ITEM {classid}-{instanceid} add blacklist', id=f'{classid}-{instanceid}')
                             self.blacklist_items.append(f'{datetime.datetime.now()}, {name}, {classid}, {instanceid}, https://tf2.tm/en/item/{classid}-{instanceid}')
                             #print(self.blacklist_items)
@@ -468,22 +468,32 @@ class TM_Parsing():
                 else:
                     logger.warning(f'PROCCESING ITEM {classid}-{instanceid} don"t autobuy, item in blacklist. Blacklist: {black}', id=f'{classid}-{instanceid}')
 
+            score_flag = False
+            paint_flag = False
+            score_price = -100
+            paint_price = -100
 
-            if not killstreak and not spell and not effect and score:
-                for score_name in config['notification_score'][lang]:
-                    for score_item in score:
-                        if score_name.lower() in score_item:
-                            if price_item <= config['notification_score'][lang][score_item]['price']:
-                                message_thread_id = 51809
+            if price_item_raw != -1:
+                if not killstreak and not spell and not effect and score:
+                    for score_name in config['notification_score'][lang]:
+                        for score_item in score:
+                            score_price = max(score_price, config['notification_score'][lang][score_item]['price'])
+                            if score_name.lower() in score_item:
+                                if price_item <= config['notification_score'][lang][score_item]['price']:
+                                    message_thread_id = 51809
+                                    score_flag = True
 
-            if not killstreak and not spell and not effect and paint and message_thread_id != 51809:
-                for paint_name in config['notification_color'][lang]:
-                    if paint_name.lower() in paint.lower():
-                        if price_item <= config['notification_color'][lang][paint_name]['price']:
-                            message_thread_id = 51806
+                if not killstreak and not spell and not effect and paint and message_thread_id != 51809:
+                    for paint_name in config['notification_color'][lang]:
+                        if paint_name.lower() in paint.lower():
+                            paint_price = max(paint_price, config['notification_color'][lang][paint_name]['price'])
+                            if price_item <= config['notification_color'][lang][paint_name]['price']:
+                                message_thread_id = 51806
+                                paint_flag = True
 
 
             if item:
+                flag_notification = True
                 filter_price_log = 0
                 finily_price = 0
                 for filter_price in config['filter']['notification']:
@@ -498,15 +508,12 @@ class TM_Parsing():
 
                 logger.info(f'PROCCESING ITEM {classid}-{instanceid} find notification filter price: {filter_price_log} Procent filter: {config["filter"]["notification"][filter_price_log]} New price: {finily_price} BD price: {price_db} Price item: {price_item}', id=f'{classid}-{instanceid}')
 
-                if finily_price or spell or priority or effect or killstreak:
-                    if price_item_raw == -1 and (not spell or not effect or not killstreak):
-                        finily_price = -10000
-                        if price_db >= 500:
-                            logger.info(f'PROCCESING ITEM {classid}-{instanceid} get priority Price db: {price_db}', id=f'{classid}-{instanceid}')
-                            priority = True
+                if finily_price or spell or priority or effect or score_flag or paint_flag:
+                    if price_item_raw == -1 and (not spell or not effect):
+                        flag_notification = False
                         logger.info(f'PROCCESING ITEM {classid}-{instanceid} change price check for -1', id=f'{classid}-{instanceid}')
 
-                    if price_item <= finily_price or spell or priority or effect or killstreak:
+                    if (flag_notification and price_item <= finily_price ) or spell or priority or effect or score_flag or paint_flag:
                         logger.success(f'PROCCESING ITEM {classid}-{instanceid} send message in telegram in chanel id: {message_thread_id}', id=f'{classid}-{instanceid}')
                         message = f'{name}{effect}\n{non_craftable}\n{mes_description}'
 
@@ -519,6 +526,10 @@ class TM_Parsing():
                         message += f'\nhttps://tf2.tm/en/item/{classid}-{instanceid}'
                         self.bot.send_item(message, classid, instanceid, price_item_raw, markup_flag=True, message_thread_id=message_thread_id)
                     else:
+                        if score_price != -100:
+                            finily_price = score_price
+                        elif paint_price != -100:
+                            finily_price = paint_price
                         logger.info(f'PROCCESING ITEM {classid}-{instanceid} add to future notification Price: {finily_price * 100 - 1} Old price: {price_item_raw}', id=f'{classid}-{instanceid}')
                         future['notification'][f'{classid}-{instanceid}'] = {'procent': finily_price * 100 - 1, 'name': name, 'old_price': price_item_raw}
                         items_cache.pop(f'{classid}-{instanceid}')
@@ -543,14 +554,14 @@ class TM_Parsing():
                 message += f'Цена на ТМ: {round(price_item / config["currency"]["keys"], 2)} keys, {price_item} ₽\n\n'
                 message += f'https://tf2.tm/en/item/{classid}-{instanceid}'
                 self.bot.send_item(message, classid, instanceid, price_item_raw, markup_undefiend=True, message_thread_id=message_thread_id)
-            elif score:
+            elif score_flag:
                 message_thread_id = 51809
                 logger.success(f'PROCCESING ITEM {classid}-{instanceid} send message in telegram in chanel id: {message_thread_id}', id=f'{classid}-{instanceid}')
                 message = f'{name}{effect}\n{non_craftable}\n{mes_description}'
                 message += f'Цена на ТМ: {round(price_item / config["currency"]["keys"], 2)} keys, {price_item} ₽\n\n'
                 message += f'https://tf2.tm/en/item/{classid}-{instanceid}'
                 self.bot.send_item(message, classid, instanceid, price_item_raw, markup_undefiend=True, message_thread_id=message_thread_id)
-            elif paint:
+            elif paint_flag:
                 message_thread_id = 51806
                 logger.success(f'PROCCESING ITEM {classid}-{instanceid} send message in telegram in chanel id: {message_thread_id}', id=f'{classid}-{instanceid}')
                 message = f'{name}{effect}\n{non_craftable}\n{mes_description}'
