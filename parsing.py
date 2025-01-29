@@ -369,18 +369,7 @@ class TM_Parsing():
 
                     if flag_autobuy_spell:
                         logger.info(f'PROCCESING ITEM {classid}-{instanceid} spell autobuy item Price TM: {price_item} Price DB: {price_db}', id=f'{classid}-{instanceid}')
-                        description = (f'Цена в базе: {price_db}')
-                        logger.info(f'PROCCESING ITEM {classid}-{instanceid} check item in autobuy blacklist', id=f'{classid}-{instanceid}')
-                        for black in config['autobuy_blacklist']:
-                            if black in name.lower():
-                                flag_autobuy_spell = False
-
-                        if flag_autobuy_spell:
-                            flag_autobuy = True
-                            logger.info('Попытка купить предмет!')
-                            self.buy_item(classid, instanceid, price_item_raw, description, name, autobuy=True)
-                        else:
-                            logger.warning(f'PROCCESING ITEM {classid}-{instanceid} don"t autobuy, item in blacklist. Blacklist: {black}', id=f'{classid}-{instanceid}')
+                        flag_autobuy = True
                     else:
                         logger.warning(f'PROCCESING ITEM {classid}-{instanceid} don"t autobuy spell filter',id=f'{classid}-{instanceid}')
                 else:
@@ -396,18 +385,7 @@ class TM_Parsing():
 
                     if flag_autobuy_unusual:
                         logger.info(f'PROCCESING ITEM {classid}-{instanceid} unusual autobuy item Price TM: {price_item} Price DB: {price_db}', id=f'{classid}-{instanceid}')
-                        description = (f'Цена в базе: {price_db}')
-                        logger.info(f'PROCCESING ITEM {classid}-{instanceid} check item in autobuy blacklist', id=f'{classid}-{instanceid}')
-                        for black in config['autobuy_blacklist']:
-                            if black in name.lower():
-                                flag_autobuy_unusual = False
-
-                        if flag_autobuy_unusual:
-                            flag_autobuy = True
-                            logger.info('Попытка купить предмет!')
-                            self.buy_item(classid, instanceid, price_item_raw, description, name, autobuy=True)
-                        else:
-                            logger.warning(f'PROCCESING ITEM {classid}-{instanceid} don"t autobuy, item in blacklist. Blacklist: {black}', id=f'{classid}-{instanceid}')
+                        flag_autobuy = True
                     else:
                         logger.warning(f'PROCCESING ITEM {classid}-{instanceid} don"t autobuy unusual filter',id=f'{classid}-{instanceid}')
                 else:
@@ -423,18 +401,7 @@ class TM_Parsing():
 
                     if flag_autobuy_color:
                         logger.info(f'PROCCESING ITEM {classid}-{instanceid} color autobuy item Price TM: {price_item} Price DB: {price_db}', id=f'{classid}-{instanceid}')
-                        description = (f'Цена в базе: {price_db}')
-                        logger.info(f'PROCCESING ITEM {classid}-{instanceid} check item in autobuy blacklist', id=f'{classid}-{instanceid}')
-                        for black in config['autobuy_blacklist']:
-                            if black in name.lower():
-                                flag_autobuy_color = False
-
-                        if flag_autobuy_color:
-                            flag_autobuy = True
-                            logger.info('Попытка купить предмет!')
-                            self.buy_item(classid, instanceid, price_item_raw, description, name, autobuy=True)
-                        else:
-                            logger.warning(f'PROCCESING ITEM {classid}-{instanceid} don"t autobuy, item in blacklist. Blacklist: {black}', id=f'{classid}-{instanceid}')
+                        flag_autobuy = True
                     else:
                         logger.warning(f'PROCCESING ITEM {classid}-{instanceid} don"t autobuy color filter',id=f'{classid}-{instanceid}')
                 else:
@@ -455,18 +422,7 @@ class TM_Parsing():
 
                     if flag_autobuy_score:
                         logger.info(f'PROCCESING ITEM {classid}-{instanceid} score autobuy item Price TM: {price_item} Price DB: {price_db}', id=f'{classid}-{instanceid}')
-                        description = (f'Цена в базе: {price_db}')
-                        logger.info(f'PROCCESING ITEM {classid}-{instanceid} check item in autobuy blacklist', id=f'{classid}-{instanceid}')
-                        for black in config['autobuy_blacklist']:
-                            if black in name.lower():
-                                flag_autobuy_score = False
-
-                        if flag_autobuy_score:
-                            flag_autobuy = True
-                            logger.info('Попытка купить предмет!')
-                            self.buy_item(classid, instanceid, price_item_raw, description, name, autobuy=True)
-                        else:
-                            logger.warning(f'PROCCESING ITEM {classid}-{instanceid} don"t autobuy, item in blacklist. Blacklist: {black}', id=f'{classid}-{instanceid}')
+                        flag_autobuy = True
                     else:
                         logger.warning(f'PROCCESING ITEM {classid}-{instanceid} don"t autobuy scores filter',id=f'{classid}-{instanceid}')
                 else:
@@ -491,23 +447,27 @@ class TM_Parsing():
                         flag_autobuy_filter = True
 
                     if flag_autobuy_filter:
+                        flag_autobuy = True
                         logger.info(f'PROCCESING ITEM {classid}-{instanceid} filter autobuy item Price TM: {price_item} Price DB: {price_db}',id=f'{classid}-{instanceid}')
-                        description = (f'Цена в базе: {price_db}')
-                        logger.info(f'PROCCESING ITEM {classid}-{instanceid} check item in autobuy blacklist',id=f'{classid}-{instanceid}')
-                        for black in config['autobuy_blacklist']:
-                            if black in name.lower():
-                                flag_autobuy_filter = False
-                        if flag_autobuy_filter:
-                            flag_autobuy = True
-                            logger.info('Попытка купить предмет!')
-                            self.buy_item(classid, instanceid, price_item_raw, description, name, autobuy=True)
-                        else:
-                            logger.warning(f'PROCCESING ITEM {classid}-{instanceid} don"t autobuy, item in blacklist. Blacklist: {black}',id=f'{classid}-{instanceid}')
                 else:
                     logger.warning(f'PROCCESING ITEM {classid}-{instanceid} autobuy 2 step disable',id=f'{classid}-{instanceid}')
             else:
                 logger.info(f'PROCCESING ITEM {classid}-{instanceid} {price_item} > {config["autobuy_max_price"]}', id=f'{classid}-{instanceid}')
             logger.info(f'PROCCESING ITEM {classid}-{instanceid} autobuy: {flag_autobuy}', id=f'{classid}-{instanceid}')
+
+            if flag_autobuy:
+                description = (f'Цена в базе: {price_db}')
+                logger.info(f'PROCCESING ITEM {classid}-{instanceid} check item in autobuy blacklist',id=f'{classid}-{instanceid}')
+                for black in config['autobuy_blacklist']:
+                    if black in name.lower():
+                        flag_autobuy = False
+
+                if flag_autobuy:
+                    logger.info('Попытка купить предмет!')
+                    self.buy_item(classid, instanceid, price_item_raw, description, name, autobuy=True)
+                else:
+                    logger.warning(f'PROCCESING ITEM {classid}-{instanceid} don"t autobuy, item in blacklist. Blacklist: {black}', id=f'{classid}-{instanceid}')
+
 
             if not killstreak and not spell and not effect and score:
                 for score_name in config['notification_score'][lang]:
