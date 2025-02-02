@@ -309,7 +309,7 @@ class TM_Parsing():
                     logger.info(f'PROCCESING ITEM {classid}-{instanceid} check item in unusual bd', id=f'{classid}-{instanceid}')
                     if not spell:
                         message_thread_id = 6
-                    if 'Not Usable in Crafting' not in full_description:
+                    if 'Not Usable in Crafting' not in full_description or 'Нельзя перековывать' not in full_description:
                         if 'Craftable' in items_unusual_bd[name]:
                             if effect in items_unusual_bd[name]['Craftable']['Particles']:
                                 item = items_unusual_bd[name]['Craftable']['Particles'][effect]
@@ -330,7 +330,7 @@ class TM_Parsing():
                             logger.warning(f'PROCCESING ITEM {classid}-{instanceid} Non-Craftable not in unusual bd item {name}', id=f'{classid}-{instanceid}')
                     effect = ' Effect: ' + effect
                 else:
-                    if 'Not Usable in Crafting' not in full_description:
+                    if 'Not Usable in Crafting' not in full_description or 'Нельзя перековывать' not in full_description:
                         if 'Craftable' in items_bd[name]:
                             item = items_bd[name]['Craftable']
                             price_db = item['price'] * config['currency'][item['currency']]
