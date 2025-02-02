@@ -280,12 +280,18 @@ class TM_Parsing():
                                         message_thread_id = 51331
                                     continue
 
+            if 'Not Usable in Crafting' not in full_description or 'Нельзя перековывать' not in full_description:
+                non_craftable = 'Non-Craftable\n'
+
             logger.info(f'PROCCESING ITEM {classid}-{instanceid} full description: {full_description}', id=f'{classid}-{instanceid}')
             logger.info(f'PROCCESING ITEM {classid}-{instanceid} unusual effect: {effect}', id=f'{classid}-{instanceid}')
             logger.info(f'PROCCESING ITEM {classid}-{instanceid} spell: {spell}', id=f'{classid}-{instanceid}')
             logger.info(f'PROCCESING ITEM {classid}-{instanceid} killstreak: {killstreak}', id=f'{classid}-{instanceid}')
             logger.info(f'PROCCESING ITEM {classid}-{instanceid} score: {score}', id=f'{classid}-{instanceid}')
             logger.info(f'PROCCESING ITEM {classid}-{instanceid} paint: {paint}', id=f'{classid}-{instanceid}')
+            logger.info(f'PROCCESING ITEM {classid}-{instanceid} Craftable: {non_craftable}', id=f'{classid}-{instanceid}')
+
+
 
             if mes_description:
                 mes_description = 'Описание:\n' + mes_description + '\n\n'
@@ -309,7 +315,7 @@ class TM_Parsing():
                     logger.info(f'PROCCESING ITEM {classid}-{instanceid} check item in unusual bd', id=f'{classid}-{instanceid}')
                     if not spell:
                         message_thread_id = 6
-                    if 'Not Usable in Crafting' not in full_description or 'Нельзя перековывать' not in full_description:
+                    if not non_craftable:
                         if 'Craftable' in items_unusual_bd[name]:
                             if effect in items_unusual_bd[name]['Craftable']['Particles']:
                                 item = items_unusual_bd[name]['Craftable']['Particles'][effect]
@@ -330,7 +336,7 @@ class TM_Parsing():
                             logger.warning(f'PROCCESING ITEM {classid}-{instanceid} Non-Craftable not in unusual bd item {name}', id=f'{classid}-{instanceid}')
                     effect = ' Effect: ' + effect
                 else:
-                    if 'Not Usable in Crafting' not in full_description or 'Нельзя перековывать' not in full_description:
+                    if not non_craftable:
                         if 'Craftable' in items_bd[name]:
                             item = items_bd[name]['Craftable']
                             price_db = item['price'] * config['currency'][item['currency']]
