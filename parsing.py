@@ -280,7 +280,7 @@ class TM_Parsing():
                                         message_thread_id = 51331
                                     continue
 
-            if 'Not Usable in Crafting' not in full_description or 'Нельзя перековывать' not in full_description:
+            if 'Not Usable in Crafting' in full_description or 'Нельзя перековывать' in full_description:
                 non_craftable = 'Non-Craftable\n'
 
             logger.info(f'PROCCESING ITEM {classid}-{instanceid} full description: {full_description}', id=f'{classid}-{instanceid}')
