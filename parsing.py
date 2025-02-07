@@ -360,6 +360,7 @@ class TM_Parsing():
 
             logger.info(f'PROCCESING ITEM {classid}-{instanceid} check autobuy', id=f'{classid}-{instanceid}')
             flag_autobuy = False
+            mes_autobuy = 'Был куплен по фильтрам: '
             if price_item <= config['autobuy_max_price'] and price_item_raw > 0:
                 if self.autobuy_spell:
                     logger.info(f'PROCCESING ITEM {classid}-{instanceid} check spell autobuy', id=f'{classid}-{instanceid}')
@@ -377,6 +378,7 @@ class TM_Parsing():
                     if flag_autobuy_spell:
                         logger.info(f'PROCCESING ITEM {classid}-{instanceid} spell autobuy item Price TM: {price_item} Price DB: {price_db}', id=f'{classid}-{instanceid}')
                         flag_autobuy = True
+                        mes_autobuy += 'Spells, '
                     else:
                         logger.warning(f'PROCCESING ITEM {classid}-{instanceid} don"t autobuy spell filter',id=f'{classid}-{instanceid}')
                 else:
@@ -393,6 +395,7 @@ class TM_Parsing():
                     if flag_autobuy_unusual:
                         logger.info(f'PROCCESING ITEM {classid}-{instanceid} unusual autobuy item Price TM: {price_item} Price DB: {price_db}', id=f'{classid}-{instanceid}')
                         flag_autobuy = True
+                        mes_autobuy += 'Unusual, '
                     else:
                         logger.warning(f'PROCCESING ITEM {classid}-{instanceid} don"t autobuy unusual filter',id=f'{classid}-{instanceid}')
                 else:
@@ -409,6 +412,7 @@ class TM_Parsing():
                     if flag_autobuy_color:
                         logger.info(f'PROCCESING ITEM {classid}-{instanceid} color autobuy item Price TM: {price_item} Price DB: {price_db}', id=f'{classid}-{instanceid}')
                         flag_autobuy = True
+                        mes_autobuy += 'Colors, '
                     else:
                         logger.warning(f'PROCCESING ITEM {classid}-{instanceid} don"t autobuy color filter',id=f'{classid}-{instanceid}')
                 else:
@@ -430,6 +434,7 @@ class TM_Parsing():
                     if flag_autobuy_score:
                         logger.info(f'PROCCESING ITEM {classid}-{instanceid} score autobuy item Price TM: {price_item} Price DB: {price_db}', id=f'{classid}-{instanceid}')
                         flag_autobuy = True
+                        mes_autobuy += 'Scores, '
                     else:
                         logger.warning(f'PROCCESING ITEM {classid}-{instanceid} don"t autobuy scores filter',id=f'{classid}-{instanceid}')
                 else:
@@ -455,6 +460,7 @@ class TM_Parsing():
 
                     if flag_autobuy_filter:
                         flag_autobuy = True
+                        mes_autobuy += 'Filter, '
                         logger.info(f'PROCCESING ITEM {classid}-{instanceid} filter autobuy item Price TM: {price_item} Price DB: {price_db}',id=f'{classid}-{instanceid}')
                 else:
                     logger.warning(f'PROCCESING ITEM {classid}-{instanceid} autobuy 2 step disable',id=f'{classid}-{instanceid}')
@@ -463,7 +469,8 @@ class TM_Parsing():
             logger.info(f'PROCCESING ITEM {classid}-{instanceid} autobuy: {flag_autobuy}', id=f'{classid}-{instanceid}')
 
             if flag_autobuy:
-                description = (f'Цена в базе: {price_db}')
+                description = (f'Цена в базе: {price_db}\n'
+                               f'{mes_autobuy[:-2]}')
                 logger.info(f'PROCCESING ITEM {classid}-{instanceid} check item in autobuy blacklist',id=f'{classid}-{instanceid}')
                 for black in config['autobuy_blacklist']:
                     if black in name.lower():
