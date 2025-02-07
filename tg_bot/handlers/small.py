@@ -235,3 +235,15 @@ def run(bot: TeleBot, tm: TM_Parsing, bot_parsing: TeleBot):
                     bot.send_document(message.chat.id, file)
             else:
                 bot.send_message(message.chat.id, f'Лог файла не существует для предмета {args}')
+
+    @bot.message_handler(commands=['ws_test'])
+    def ws_test(message: Message):
+        args = extract_arguments(message.text)
+        if os.path.isfile(f'./websockets_tests/{args}.json'):
+            with open(f'./websockets_tests/{args}.json', 'r') as file:
+                dates = json.load(file)
+                for i in dates['tests']:
+                    tm.websocket_test.put(i)
+            bot.send_message(message.chat.id, 'Готово!')
+        else:
+            bot.send_message(message.chat.id, f'Файла не существует для предмета {args}')
