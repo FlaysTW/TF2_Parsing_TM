@@ -19,7 +19,8 @@ def run(bot: TeleBot, tm: TM_Parsing, bot_menu: TeleBot):
         data = item_message.parse(callback.data)
         classid = data['classid']
         instanceid = data['instanceid']
-        price = data['price']
+
+        price = int(data['price'])
         tm.buy_item(classid, instanceid, price)
 
     @bot.callback_query_handler(func= lambda x: item_message.filter(type='del').check(x))
