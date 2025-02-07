@@ -68,8 +68,10 @@ class TM_Parsing():
         self.create_thread_save_cache()
 
     def buy_item(self, classid, instanceid, price, description = '', title = '', autobuy=False):
+        logger.info(f'Buy item {classid}-{instanceid} price: {price}')
         url = f'https://tf2.tm/api/Buy/{classid}_{instanceid}/{price}//?key={self.TM_KEY}'
         r = requests.get(url)
+        logger.info(f'Buy item {classid}-{instanceid} Status code: {r.status_code} json: {r.text}')
         if r.status_code == 200:
             resp = r.json()
             result = resp['result']
@@ -87,7 +89,6 @@ class TM_Parsing():
                    f'Айди предмета: <a href="https://tf2.tm/en/item/{classid}-{instanceid}">{classid}-{instanceid}</a>\n'
                    f'Цена на ТМ: {round(price / 100, 2)}\n'
                    f'{description}')
-            print(mes)
             if autobuy:
                 self.bot.send_item(mes, classid, instanceid, price, 2, markup_autobuy=True)
             else:
@@ -289,7 +290,7 @@ class TM_Parsing():
             logger.info(f'PROCCESING ITEM {classid}-{instanceid} killstreak: {killstreak}', id=f'{classid}-{instanceid}')
             logger.info(f'PROCCESING ITEM {classid}-{instanceid} score: {score}', id=f'{classid}-{instanceid}')
             logger.info(f'PROCCESING ITEM {classid}-{instanceid} paint: {paint}', id=f'{classid}-{instanceid}')
-            logger.info(f'PROCCESING ITEM {classid}-{instanceid} Craftable: {non_craftable}', id=f'{classid}-{instanceid}')
+            logger.info(f'PROCCESING ITEM {classid}-{instanceid} Craftable: {non_craftable[:-1]}', id=f'{classid}-{instanceid}')
 
 
 
@@ -753,7 +754,7 @@ class TM_Parsing():
                                                         logger.success(f'URL PARSING {classid}-{instanceid} filter autobuy item Price TM: {price} Price DB: {min_price}', id=f'{classid}-{instanceid}')
                                                         flag_autobuy = True
                                                         description = (f'Цена в базе: {min_price}')
-                                                        logger.info(f'WEBSOCKET {classid}-{instanceid} check item in autobuy blacklist', id=f'{classid}-{instanceid}')
+                                                        logger.info(f'URL PARSING {classid}-{instanceid} check item in autobuy blacklist', id=f'{classid}-{instanceid}')
                                                         for black in config['autobuy_blacklist']:
                                                             if black in name.lower():
                                                                 flag_autobuy = False

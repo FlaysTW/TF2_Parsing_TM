@@ -15,7 +15,7 @@ def run(bot: TeleBot, tm: TM_Parsing, bot_menu: TeleBot):
     @bot.callback_query_handler(func= lambda x: item_message.filter(type='buy').check(x))
     @logger.catch()
     def buy_item(callback: CallbackQuery):
-        bot.answer_callback_query(callback.id)
+        bot.answer_callback_query(callback.id, 'Попытка купить предмет!')
         data = item_message.parse(callback.data)
         classid = data['classid']
         instanceid = data['instanceid']
